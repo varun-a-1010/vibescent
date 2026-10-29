@@ -277,10 +277,64 @@ small {
     transform: rotate(360deg);
   }
 }
-.thumb {
-  max-width: 140px;
+.composer {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+}
+.composer:focus-within {
+  border-color: var(--accent);
+}
+.composer textarea {
+  border: 0;
+  padding: 4px;
+  margin: 0;
+  resize: vertical;
+  background: transparent;
+}
+.composer textarea:focus-visible {
+  outline: none;
+}
+.composer .attach {
+  display: inline-block;
+  margin: 6px 10px 0 0;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.composer small {
+  color: var(--dim);
+  font-size: 0.72rem;
+}
+.attached {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.attached img {
+  display: block;
+  max-height: 120px;
   border-radius: 8px;
-  margin: 6px 0;
+}
+.attached button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  line-height: 1;
+}
+.steps li button {
+  all: unset;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.back {
+  margin-top: 16px;
 }
 .badge {
   font-family: var(--sans);

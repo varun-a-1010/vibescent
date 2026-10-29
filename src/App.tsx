@@ -93,6 +93,9 @@ export function App() {
         }),
       );
     });
+  const attach = async (f?: File) => {
+    if (f) setPhoto(await toPhoto(f).catch(() => null));
+  };
   const usePreset = (p: Preset) => {
     setText(p.look);
     setBudget(p.budget);
@@ -118,6 +121,14 @@ export function App() {
     setAnswer('');
   };
   const step = result ? 3 : suggestion ? 2 : 1;
+  const goTo = (n: number) => {
+    if (n < 3) setResult(null);
+    if (n < 2) {
+      setSuggestion(null);
+      setPicked([]);
+      setAnswer('');
+    }
+  };
 
   return (
     <>
@@ -133,7 +144,13 @@ export function App() {
           <ol className="steps" aria-label="Progress">
             {['Your look', 'Touchstones', 'Shortlist'].map((l, i) => (
               <li key={l} className={step === i + 1 ? 'now' : step > i + 1 ? 'done' : ''}>
-                {l}
+                {step > i + 1 ? (
+                  <button type="button" onClick={() => goTo(i + 1)}>
+                    {l}
+                  </button>
+                ) : (
+                  l
+                )}
               </li>
             ))}
           </ol>
@@ -154,55 +171,50 @@ export function App() {
 
         {step === 1 && (
           <>
-            <section>
-              <h2 className="eyebrow">Try a look</h2>
-              <div className="presets">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.id}
-                    className="preset"
-                    disabled={!!busy || !status?.gemini}
-                    style={{
-                      background: `linear-gradient(135deg, ${p.colors[0]}, ${p.colors[1]})`,
-                    }}
-                    onClick={() => usePreset(p)}
-                  >
-                    <b>{p.title}</b>
-                    <span>{p.look}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
             <section className="card">
-              <h2 className="eyebrow">Or describe your own</h2>
-              <label>
-                What are you wearing and where are you headed?
+              <h2 className="eyebrow">Describe your look</h2>
+              <div
+                className="composer"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  attach(e.dataTransfer.files[0]);
+                }}
+              >
+                {photo && (
+                  <div className="attached">
+                    <img alt="Your outfit" src={`data:${photo.mimeType};base64,${photo.data}`} />
+                    <button type="button" aria-label="Remove photo" onClick={() => setPhoto(null)}>
+                      ×
+                    </button>
+                  </div>
+                )}
                 <textarea
+                  aria-label="What are you wearing and where are you headed?"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
+                  onPaste={(e) => {
+                    const f = [...e.clipboardData.files].find((x) => x.type.startsWith('image/'));
+                    if (f) {
+                      e.preventDefault();
+                      attach(f);
+                    }
+                  }}
                   rows={3}
                   maxLength={1000}
-                  placeholder="Boxy leather jacket, dark denim, rooftop bar on a cool night"
+                  placeholder="What are you wearing and where are you headed? Add or drop a photo too."
                 />
-              </label>
-              <label>
-                Outfit photo (optional, sent to Gemini only, never stored)
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0];
-                    setPhoto(f ? await toPhoto(f).catch(() => null) : null);
-                  }}
-                />
-              </label>
-              {photo && (
-                <img
-                  className="thumb"
-                  alt="Your outfit"
-                  src={`data:${photo.mimeType};base64,${photo.data}`}
-                />
-              )}
+                <label className="attach">
+                  📷 {photo ? 'Change photo' : 'Add photo'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={(e) => attach(e.target.files?.[0])}
+                  />
+                </label>
+                <small>Photos go to Gemini only and are never stored.</small>
+              </div>
               <div className="row">
                 <label>
                   Budget
@@ -259,6 +271,25 @@ export function App() {
                 Continue
               </button>
             </section>
+            <section>
+              <h2 className="eyebrow">Or try a sample look</h2>
+              <div className="presets">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    className="preset"
+                    disabled={!!busy || !status?.gemini}
+                    style={{
+                      background: `linear-gradient(135deg, ${p.colors[0]}, ${p.colors[1]})`,
+                    }}
+                    onClick={() => usePreset(p)}
+                  >
+                    <b>{p.title}</b>
+                    <span>{p.look}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
           </>
         )}
 
@@ -309,7 +340,7 @@ export function App() {
                 ))}
             </div>
             <div className="row">
-              <button onClick={reset}>Back</button>
+              <button onClick={() => goTo(1)}>Back</button>
               <button
                 className="primary"
                 disabled={!!busy || picked.length < 1}
@@ -323,6 +354,9 @@ export function App() {
 
         {step === 3 && result && (
           <>
+            <button type="button" className="back" onClick={() => goTo(2)}>
+              ← Back to touchstones
+            </button>
             <section className="card qloo">
               <h2>
                 <span className="badge">Qloo</span> What the taste graph returned
