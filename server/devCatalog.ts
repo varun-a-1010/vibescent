@@ -39,7 +39,7 @@ export function createDevCatalog(rows: DevRow[]): Catalog {
     families: sorted(rows.map((r) => r.family)),
     seasons: ['spring', 'summer', 'fall', 'winter'],
     occasions: sorted(rows.flatMap((r) => r.occasions ?? [])),
-    sillage: sorted(rows.flatMap((r) => (r.sillage ? [r.sillage] : []))),
+    sillage: sorted(rows.flatMap((r) => (r.sillage && r.sillage !== 'unrated' ? [r.sillage] : []))),
     longevity: sorted(rows.flatMap((r) => (r.longevity ? [r.longevity] : []))),
     vibes: [],
   };

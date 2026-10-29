@@ -15,7 +15,7 @@ export type RecommendInput = {
 
 export type RecommendResult = {
   /** Shown as the Qloo handoff panel so Qloo data is distinguishable from LLM interpretation. */
-  qloo: { entities: Entity[]; tags: StyleTag[] };
+  qloo: { entities: Entity[]; tags: StyleTag[]; dropped: StyleTag[] };
   brief: Awaited<ReturnType<Translator['translate']>>;
   items: Recommendation[];
 };
@@ -46,5 +46,9 @@ export async function recommend(
     vocab,
   );
   const items = await deps.catalog.recommend(toCatalogRequest(brief, input.constraints));
-  return { qloo: { entities: input.entities, tags }, brief, items };
+  return {
+    qloo: { entities: input.entities, tags, dropped: allTags.filter((t) => off.has(t.id)) },
+    brief,
+    items,
+  };
 }

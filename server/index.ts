@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { buildApp } from './app';
 import { createHttpCatalog } from './catalog';
 import { loadDevCatalog } from './devCatalog';
@@ -32,6 +33,10 @@ const app = buildApp({
   catalog,
   catalogLabel,
 });
+if (env.NODE_ENV === 'production' && existsSync('dist')) {
+  const { default: fastifyStatic } = await import('@fastify/static');
+  await app.register(fastifyStatic, { root: resolve('dist') });
+}
 const port = Number(env.PORT ?? 3196);
 await app.listen({ port, host: '127.0.0.1' });
 console.log(`VibeScent API on http://127.0.0.1:${port} (catalog: ${catalogLabel ?? 'none'})`);

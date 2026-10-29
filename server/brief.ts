@@ -11,24 +11,37 @@ export const constraintsSchema = z.object({
 export type Constraints = z.infer<typeof constraintsSchema>;
 
 /** Structured scent brief built from a vocabulary, so the model cannot invent terms. */
-export function createBriefSchema(vocab: Vocab) {
+/** Vertex rejects very large enums in a response schema; above this the wire schema uses plain strings. */
+export const WIRE_ENUM_LIMIT = 60;
+
+/**
+ * `wire` builds the schema sent to the model (large vocabularies relaxed to strings, listed in the
+ * prompt instead); the strict one is always used to validate what comes back.
+ */
+export function createBriefSchema(vocab: Vocab, options: { wire?: boolean } = {}) {
   const pick = (values: string[]) =>
-    values.length ? z.enum(values as [string, ...string[]]) : z.never();
+    options.wire && values.length > WIRE_ENUM_LIMIT
+      ? z.string()
+      : z.enum(values as [string, ...string[]]);
+  const list = (values: string[], max: number) => z.array(pick(values)).max(max);
   return z.object({
     wantAccords: z
       .array(z.object({ name: pick(vocab.accords), weight: z.number().min(0).max(1) }))
       .max(8),
-    families: z.array(pick(vocab.families)).max(3),
-    seasons: z.array(pick(vocab.seasons)).max(4),
-    occasions: z.array(pick(vocab.occasions)).max(4),
-    vibes: z.array(pick(vocab.vibes)).max(4),
-    sillage: z.array(pick(vocab.sillage)).max(3),
-    longevity: z.array(pick(vocab.longevity)).max(3),
+    families: list(vocab.families, 3),
+    seasons: list(vocab.seasons, 4),
+    occasions: list(vocab.occasions, 4),
+    // With no vibe vocabulary the field is left out of the model's schema entirely.
+    ...(vocab.vibes.length ? { vibes: list(vocab.vibes, 4) } : {}),
+    sillage: list(vocab.sillage, 3),
+    longevity: list(vocab.longevity, 3),
     /** One line per cultural cue saying what it contributed; shown to the user. */
     because: z.array(z.object({ cue: z.string().max(60), effect: z.string().max(160) })).max(8),
   });
 }
-export type ScentBrief = z.infer<ReturnType<typeof createBriefSchema>>;
+export type ScentBrief = Omit<z.infer<ReturnType<typeof createBriefSchema>>, 'vibes'> & {
+  vibes: string[];
+};
 
 /**
  * Enforces the precedence rule: explicit user constraints beat cultural interpretation.

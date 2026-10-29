@@ -1,6 +1,7 @@
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import type { GenerateContentParameters, GenerateContentResponse } from '@google/genai';
 import { z } from 'zod';
+import { retryOnce } from './retry';
 import { PRIMARY_KINDS, type Entity, type Kind, type Qloo } from './qloo';
 
 export const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
@@ -58,7 +59,9 @@ export function createGeminiSuggester(
   }
   const generate =
     options.generate ??
-    (client ? (r: GenerateContentParameters) => client!.models.generateContent(r) : undefined);
+    (client
+      ? (r: GenerateContentParameters) => retryOnce(() => client!.models.generateContent(r))
+      : undefined);
   return {
     async suggest(input, qloo) {
       if (!generate) throw new Error('Gemini is not connected. Configure the Vertex settings.');

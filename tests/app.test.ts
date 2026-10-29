@@ -42,6 +42,7 @@ describe('api', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().qloo.tags[0].name).toBe('Sleek');
+    expect(res.json().qloo.dropped).toEqual([]);
   });
   it('rejects bad input and missing services cleanly', async () => {
     const a = app();

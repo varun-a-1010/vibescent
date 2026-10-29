@@ -1,6 +1,7 @@
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import type { GenerateContentParameters, GenerateContentResponse } from '@google/genai';
 import { z } from 'zod';
+import { retryOnce } from './retry';
 import { createBriefSchema, type Constraints, type ScentBrief } from './brief';
 import type { Entity, StyleTag } from './qloo';
 import type { Vocab } from './vocab';
@@ -52,7 +53,9 @@ export function createGeminiTranslator(
   }
   const generate =
     options.generate ??
-    (client ? (r: GenerateContentParameters) => client!.models.generateContent(r) : undefined);
+    (client
+      ? (r: GenerateContentParameters) => retryOnce(() => client!.models.generateContent(r))
+      : undefined);
   return {
     async translate(input, vocab) {
       if (!generate) throw new Error('Gemini is not connected. Configure the Vertex settings.');
@@ -65,21 +68,30 @@ export function createGeminiTranslator(
         qlooStyleTags: input.tags.map((t) => t.name),
         vocabulary: vocab,
       });
-      const response = await generate({
-        model: options.model ?? 'gemini-3.8-flash',
-        contents: prompt,
-        config: {
-          systemInstruction: SYSTEM,
-          maxOutputTokens: 4000,
-          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-          responseMimeType: 'application/json',
-          responseJsonSchema: z.toJSONSchema(schema),
-          abortSignal: AbortSignal.timeout(60_000),
-        },
-      });
-      if (response.candidates?.[0]?.finishReason !== 'STOP' || !response.text)
-        throw new Error('Incomplete scent brief');
-      return schema.parse(JSON.parse(response.text));
+      const attempt = async () => {
+        const response = await generate({
+          model: options.model ?? 'gemini-3.8-flash',
+          contents: prompt,
+          config: {
+            systemInstruction: SYSTEM,
+            maxOutputTokens: 4000,
+            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+            responseMimeType: 'application/json',
+            responseJsonSchema: z.toJSONSchema(createBriefSchema(vocab, { wire: true })),
+            abortSignal: AbortSignal.timeout(60_000),
+          },
+        });
+        if (response.candidates?.[0]?.finishReason !== 'STOP' || !response.text)
+          throw new Error('Incomplete scent brief');
+        return { vibes: [], ...schema.parse(JSON.parse(response.text)) } as ScentBrief;
+      };
+      // The model may still step outside the vocabulary once; the strict schema rejects it and we retry.
+      try {
+        return await attempt();
+      } catch (error) {
+        if (!(error instanceof z.ZodError)) throw error;
+        return attempt();
+      }
     },
   };
 }
