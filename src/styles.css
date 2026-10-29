@@ -170,9 +170,31 @@ button:disabled {
   background: #b06a48;
 }
 .presets {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  display: flex;
   gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 8px;
+}
+.presets .preset {
+  flex: 0 0 220px;
+  min-height: 120px;
+  scroll-snap-align: start;
+}
+.preset span {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.composer input.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
 }
 .preset {
   text-align: left;
@@ -298,6 +320,7 @@ small {
 }
 .composer .attach {
   display: inline-block;
+  position: relative;
   margin: 6px 10px 0 0;
   padding: 4px 10px;
   border: 1px solid var(--line);

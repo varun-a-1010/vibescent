@@ -171,6 +171,25 @@ export function App() {
 
         {step === 1 && (
           <>
+            <section>
+              <h2 className="eyebrow">Try a sample look</h2>
+              <div className="presets" role="list">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    className="preset"
+                    disabled={!!busy || !status?.gemini}
+                    style={{
+                      background: `linear-gradient(135deg, ${p.colors[0]}, ${p.colors[1]})`,
+                    }}
+                    onClick={() => usePreset(p)}
+                  >
+                    <b>{p.title}</b>
+                    <span>{p.look}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
             <section className="card">
               <h2 className="eyebrow">Describe your look</h2>
               <div
@@ -209,7 +228,7 @@ export function App() {
                   <input
                     type="file"
                     accept="image/*"
-                    hidden
+                    className="sr"
                     onChange={(e) => attach(e.target.files?.[0])}
                   />
                 </label>
@@ -270,25 +289,6 @@ export function App() {
               >
                 Continue
               </button>
-            </section>
-            <section>
-              <h2 className="eyebrow">Or try a sample look</h2>
-              <div className="presets">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.id}
-                    className="preset"
-                    disabled={!!busy || !status?.gemini}
-                    style={{
-                      background: `linear-gradient(135deg, ${p.colors[0]}, ${p.colors[1]})`,
-                    }}
-                    onClick={() => usePreset(p)}
-                  >
-                    <b>{p.title}</b>
-                    <span>{p.look}</span>
-                  </button>
-                ))}
-              </div>
             </section>
           </>
         )}
