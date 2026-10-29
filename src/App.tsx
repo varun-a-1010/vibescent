@@ -127,6 +127,7 @@ export function App() {
     setAnswer('');
   };
   const step = result ? 3 : suggestion ? 2 : 1;
+  const canSend = !busy && (!!text.trim() || !!photo) && !!status?.gemini;
   const goTo = (n: number) => {
     if (n < 3) setResult(null);
     if (n < 2) {
@@ -243,6 +244,12 @@ export function App() {
                   aria-label="What are you wearing and where are you headed?"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                      e.preventDefault();
+                      if (canSend) suggest();
+                    }
+                  }}
                   onPaste={(e) => {
                     const f = [...e.clipboardData.files].find((x) => x.type.startsWith('image/'));
                     if (f) {
@@ -254,16 +261,27 @@ export function App() {
                   maxLength={1000}
                   placeholder="What are you wearing and where are you headed? Add or drop a photo too."
                 />
-                <label className="attach">
-                  📷 {photo ? 'Change photo' : 'Add photo'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr"
-                    onChange={(e) => attach(e.target.files?.[0])}
-                  />
-                </label>
-                <small>Photos go to Gemini only and are never stored.</small>
+                <div className="bar">
+                  <label className="attach">
+                    📷 {photo ? 'Change photo' : 'Add photo'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr"
+                      onChange={(e) => attach(e.target.files?.[0])}
+                    />
+                  </label>
+                  <small>Photos go to Gemini only and are never stored.</small>
+                  <button
+                    type="button"
+                    className="send"
+                    aria-label="Send"
+                    disabled={!canSend}
+                    onClick={() => suggest()}
+                  >
+                    ↑
+                  </button>
+                </div>
               </div>
               <fieldset>
                 <legend>Nothing too…</legend>
@@ -289,13 +307,6 @@ export function App() {
                   placeholder="e.g. I hate anything that smells like candy"
                 />
               </label>
-              <button
-                className="primary"
-                disabled={!!busy || (!text.trim() && !photo) || !status?.gemini}
-                onClick={() => suggest()}
-              >
-                Continue
-              </button>
             </section>
           </>
         )}

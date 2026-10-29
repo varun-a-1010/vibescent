@@ -545,3 +545,27 @@ footer {
 .preset:has(.pthumb) b {
   padding-right: 52px;
 }
+
+.composer .bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.composer .bar .attach {
+  margin: 0;
+}
+.composer .send {
+  margin-left: auto;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+}
+.composer .send:disabled {
+  opacity: 0.4;
+}
