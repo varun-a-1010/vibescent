@@ -199,6 +199,30 @@ export function App() {
             </section>
             <section className="card">
               <h2 className="eyebrow">Describe your look</h2>
+              <div className="row">
+                <label>
+                  Budget
+                  <select
+                    value={budget ?? ''}
+                    onChange={(e) => setBudget(e.target.value ? Number(e.target.value) : undefined)}
+                  >
+                    {BUDGETS.map(([l, v]) => (
+                      <option key={l} value={v ?? ''}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  For
+                  <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                    <option value="any">Anyone</option>
+                    <option value="masculine">Masculine</option>
+                    <option value="feminine">Feminine</option>
+                    <option value="unisex">Unisex</option>
+                  </select>
+                </label>
+              </div>
               <div
                 className="composer"
                 onDragOver={(e) => e.preventDefault()}
@@ -240,30 +264,6 @@ export function App() {
                   />
                 </label>
                 <small>Photos go to Gemini only and are never stored.</small>
-              </div>
-              <div className="row">
-                <label>
-                  Budget
-                  <select
-                    value={budget ?? ''}
-                    onChange={(e) => setBudget(e.target.value ? Number(e.target.value) : undefined)}
-                  >
-                    {BUDGETS.map(([l, v]) => (
-                      <option key={l} value={v ?? ''}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  For
-                  <select value={gender} onChange={(e) => setGender(e.target.value)}>
-                    <option value="any">Anyone</option>
-                    <option value="masculine">Masculine</option>
-                    <option value="feminine">Feminine</option>
-                    <option value="unisex">Unisex</option>
-                  </select>
-                </label>
               </div>
               <fieldset>
                 <legend>Nothing too…</legend>
