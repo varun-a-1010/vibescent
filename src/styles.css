@@ -754,3 +754,55 @@ main.wrap {
   margin-top: 10px;
   border-top: 1px solid var(--line);
 }
+
+.pickhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pickhead h2 {
+  margin: 0;
+  font-size: 1.7rem;
+}
+.count {
+  font-size: 0.8rem;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px dashed var(--accent);
+  color: var(--accent);
+}
+.count.ok {
+  border-style: solid;
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+.read {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 6px 0 10px;
+}
+.read em {
+  color: var(--dim);
+}
+.chips .tile {
+  border: 1px solid var(--line-strong, #5a4a3c);
+  cursor: pointer;
+}
+.chips .tile i {
+  font-style: normal;
+  margin-right: 6px;
+  color: var(--accent);
+}
+.chips .tile:hover {
+  border-color: var(--accent);
+}
+.chips .tile.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.chips .tile.on i {
+  color: #fff;
+}

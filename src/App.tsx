@@ -313,18 +313,21 @@ export function App() {
 
         {step === 2 && suggestion && (
           <section className="card">
-            <h2 className="eyebrow">Your cultural touchstones</h2>
-            <p className="summary">{suggestion.summary}</p>
+            <div className="pickhead">
+              <h2>Which of these feel like you?</h2>
+              <span className={picked.length ? 'count ok' : 'count'}>
+                {picked.length}/5 · {picked.length ? 'tap again to remove' : 'pick at least 1'}
+              </span>
+            </div>
+            <p className="read">
+              <em>How we read your look:</em> {suggestion.summary}
+            </p>
             {suggestion.followUp && (
               <label>
                 {suggestion.followUp}
                 <input value={answer} onChange={(e) => setAnswer(e.target.value)} maxLength={300} />
               </label>
             )}
-            <p className="muted">
-              Pick 1–5 that feel like you. These come from Qloo’s taste graph.{' '}
-              <b>{picked.length}/5</b>
-            </p>
             <div className="cats">
               {(Object.entries(suggestion.carousels) as [Kind, Entity[]][]).map(([kind, list]) => (
                 <div key={kind} className="cat">
@@ -368,7 +371,7 @@ export function App() {
                 disabled={!!busy || picked.length < 1}
                 onClick={() => recommend()}
               >
-                Find my fragrances
+                {picked.length < 1 ? 'Pick at least one to continue' : 'Find my fragrances'}
               </button>
             </div>
           </section>
