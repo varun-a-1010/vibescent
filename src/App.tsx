@@ -28,12 +28,8 @@ const REACTIONS: [string, string][] = [
   ['Less sweet', 'less sweet'],
   ['Longer lasting', 'longer lasting'],
 ];
-const BUDGETS: [string, number | undefined][] = [
-  ['No limit', undefined],
-  ['Under $50', 50],
-  ['Under $120', 120],
-  ['Under $250', 250],
-];
+const BUDGET_MIN = 20;
+const BUDGET_MAX = 400;
 const SILLAGE = ['skin-scent', 'intimate', 'moderate', 'room-filling', 'enormous'];
 const LONGEVITY = ['fleeting', 'moderate', 'long', 'very-long'];
 const SEASONS = ['spring', 'summer', 'fall', 'winter'];
@@ -200,18 +196,20 @@ export function App() {
             </section>
             <section className="card">
               <div className="opts">
-                <label>
-                  <select
+                <label className="slider">
+                  <span>{budget === undefined ? 'No budget limit' : `Up to $${budget}`}</span>
+                  <input
+                    type="range"
                     aria-label="Budget"
-                    value={budget ?? ''}
-                    onChange={(e) => setBudget(e.target.value ? Number(e.target.value) : undefined)}
-                  >
-                    {BUDGETS.map(([l, v]) => (
-                      <option key={l} value={v ?? ''}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
+                    min={BUDGET_MIN}
+                    max={BUDGET_MAX + 10}
+                    step={10}
+                    value={budget ?? BUDGET_MAX + 10}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setBudget(v > BUDGET_MAX ? undefined : v);
+                    }}
+                  />
                 </label>
                 <label>
                   <select

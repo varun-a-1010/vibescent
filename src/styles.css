@@ -650,3 +650,23 @@ h1 {
 main.wrap {
   padding-bottom: 32px;
 }
+
+.opts .slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  flex: 1 1 260px;
+  color: var(--fg);
+}
+.opts .slider span {
+  min-width: 7.5em;
+  font-size: 0.85rem;
+}
+.opts .slider input {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  accent-color: var(--accent);
+}
