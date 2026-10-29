@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   api,
   toPhoto,
@@ -36,6 +36,12 @@ const SEASONS = ['spring', 'summer', 'fall', 'winter'];
 const tint = (name: string) => (accordColors as Record<string, string>)[name] ?? '#9c5a3c';
 const pretty = (s: string) => s.replace(/-/g, ' ');
 
+type Msg =
+  | { kind: 'user'; text: string; photo?: Photo | null; tags?: string[] }
+  | { kind: 'ai'; text: string; question?: string | null }
+  | { kind: 'touch'; id: number }
+  | { kind: 'result'; result: Result };
+
 export function App() {
   const [status, setStatus] = useState<Status | null>(null);
   const [text, setText] = useState('');
@@ -44,20 +50,28 @@ export function App() {
   const [gender, setGender] = useState('any');
   const [avoid, setAvoid] = useState<string[]>([]);
   const [prefs, setPrefs] = useState('');
+  const [lookText, setLookText] = useState('');
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
-  const [answer, setAnswer] = useState('');
   const [picked, setPicked] = useState<Entity[]>([]);
   const [off, setOff] = useState<string[]>([]);
-  const [result, setResult] = useState<Result | null>(null);
+  const [msgs, setMsgs] = useState<Msg[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
     api
       .status()
       .then(setStatus)
       .catch(() => setStatus(null));
   }, []);
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [msgs.length, busy]);
 
+  const last = msgs[msgs.length - 1];
+  const started = msgs.length > 0;
+  const stage = !started ? 'start' : last?.kind === 'result' ? 'result' : 'touch';
+  const push = (...m: Msg[]) => setMsgs((x) => [...x, ...m]);
   const run = async (label: string, fn: () => Promise<void>) => {
     setBusy(label);
     setError(null);
@@ -69,28 +83,57 @@ export function App() {
       setBusy(null);
     }
   };
-  const look = () => [suggestion?.summary || text, answer].filter(Boolean).join(' — ');
-  const suggest = (t = text, p: Photo | null = photo) =>
+
+  const tags = () => [
+    budget === undefined ? 'no budget limit' : `up to $${budget}`,
+    gender === 'any' ? 'for anyone' : `for ${gender}`,
+    ...avoid.map((a) => `nothing too ${a}`),
+  ];
+  const ask = (t: string, p: Photo | null, then?: () => void) =>
     run('Reading your look…', async () => {
-      setSuggestion(await api.suggest(t, p ?? undefined));
-      setPicked([]);
-    });
-  const recommend = (extraPrefs = prefs, deselected = off) =>
-    run('Matching your vibe to the catalog…', async () => {
-      setResult(
-        await api.recommend({
-          look: look(),
-          preferences: extraPrefs,
-          budgetMaxUsd: budget,
-          gender,
-          excludeAccords: avoid,
-          entities: picked,
-          deselectedTagIds: deselected,
-        }),
+      const s = await api.suggest(t, p ?? undefined);
+      setSuggestion(s);
+      push(
+        { kind: 'ai', text: s.summary, question: s.followUp },
+        { kind: 'touch', id: Date.now() },
       );
+      then?.();
     });
-  const attach = async (f?: File) => {
-    if (f) setPhoto(await toPhoto(f).catch(() => null));
+  const recommend = (extraPrefs = prefs, deselected = off, entities = picked, look = lookText) =>
+    run('Matching your vibe to the catalog…', async () => {
+      const result = await api.recommend({
+        look: suggestion ? `${look} (${suggestion.summary})` : look,
+        preferences: extraPrefs,
+        budgetMaxUsd: budget,
+        gender,
+        excludeAccords: avoid,
+        entities,
+        deselectedTagIds: deselected,
+      });
+      push({ kind: 'result', result });
+    });
+
+  const startWith = (t: string, p: Photo | null) => {
+    setLookText(t);
+    push({ kind: 'user', text: t, photo: p, tags: tags() });
+    setText('');
+    ask(t, p);
+  };
+  const send = () => {
+    const t = text.trim();
+    if (!t && !(stage === 'start' && photo)) return;
+    if (stage === 'start') return startWith(t, photo);
+    push({ kind: 'user', text: t });
+    setText('');
+    if (stage === 'touch') {
+      const next = `${lookText}. ${t}`;
+      setLookText(next);
+      ask(next, null);
+    } else {
+      const p = [prefs, t].filter(Boolean).join('; ');
+      setPrefs(p);
+      recommend(p);
+    }
   };
   const usePreset = async (p: Preset) => {
     const sample = p.photo
@@ -99,13 +142,26 @@ export function App() {
           .then((b) => toPhoto(new File([b], p.photo!, { type: b.type })))
           .catch(() => null)
       : null;
-    setText(p.look);
     setBudget(p.budget);
     setGender(p.gender);
     setAvoid(p.avoid);
     setPrefs(p.prefs);
     setPhoto(sample);
-    suggest(p.look, sample);
+    setLookText(p.look);
+    push({
+      kind: 'user',
+      text: p.look,
+      photo: sample,
+      tags: [
+        p.budget === undefined ? 'no budget limit' : `up to $${p.budget}`,
+        p.gender === 'any' ? 'for anyone' : `for ${p.gender}`,
+        ...p.avoid.map((a) => `nothing too ${a}`),
+      ],
+    });
+    ask(p.look, sample);
+  };
+  const attach = async (f?: File) => {
+    if (f) setPhoto(await toPhoto(f).catch(() => null));
   };
   const toggle = (e: Entity) =>
     setPicked((p) =>
@@ -115,23 +171,90 @@ export function App() {
           ? p
           : [...p, e],
     );
-  const reset = () => {
+  const findFragrances = () => {
+    push({ kind: 'user', text: `I’ll go with ${picked.map((p) => p.name).join(', ')}.` });
+    recommend();
+  };
+  const startOver = () => {
+    setMsgs([]);
     setSuggestion(null);
-    setResult(null);
     setPicked([]);
     setOff([]);
-    setAnswer('');
+    setLookText('');
+    setText('');
+    setPhoto(null);
+    setPrefs('');
+    setError(null);
   };
-  const step = result ? 3 : suggestion ? 2 : 1;
-  const canSend = !busy && (!!text.trim() || !!photo) && !!status?.gemini;
-  const goTo = (n: number) => {
-    if (n < 3) setResult(null);
-    if (n < 2) {
-      setSuggestion(null);
-      setPicked([]);
-      setAnswer('');
-    }
-  };
+  const canSend = !busy && (!!text.trim() || (stage === 'start' && !!photo)) && !!status?.gemini;
+  const lastTouch = msgs.map((m) => m.kind).lastIndexOf('touch');
+  const lastResult = msgs.map((m) => m.kind).lastIndexOf('result');
+
+  const composer = (
+    <div
+      className="composer"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        if (stage === 'start') attach(e.dataTransfer.files[0]);
+      }}
+    >
+      {stage === 'start' && photo && (
+        <div className="attached">
+          <img alt="Your outfit" src={`data:${photo.mimeType};base64,${photo.data}`} />
+          <button type="button" aria-label="Remove photo" onClick={() => setPhoto(null)}>
+            ×
+          </button>
+        </div>
+      )}
+      <textarea
+        aria-label="Message"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            if (canSend) send();
+          }
+        }}
+        onPaste={(e) => {
+          const f = [...e.clipboardData.files].find((x) => x.type.startsWith('image/'));
+          if (f && stage === 'start') {
+            e.preventDefault();
+            attach(f);
+          }
+        }}
+        rows={stage === 'start' ? 3 : 1}
+        maxLength={1000}
+        placeholder={
+          stage === 'start'
+            ? 'What are you wearing and where are you headed? Add or drop a photo too.'
+            : stage === 'touch'
+              ? 'Answer, or add a detail about the look…'
+              : 'Tell me what to change: lighter, more woody, cheaper…'
+        }
+      />
+      <div className="cbar">
+        {stage === 'start' && (
+          <>
+            <label className="attach">
+              📷 {photo ? 'Change photo' : 'Add photo'}
+              <input
+                type="file"
+                accept="image/*"
+                className="sr"
+                onChange={(e) => attach(e.target.files?.[0])}
+              />
+            </label>
+            <small>Photos go to Gemini only and are never stored.</small>
+          </>
+        )}
+        <button type="button" className="send" aria-label="Send" disabled={!canSend} onClick={send}>
+          ↑
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -141,35 +264,15 @@ export function App() {
             Vibe<span>Scent</span>
           </h1>
           <p>Start with the outfit. Find the scent that finishes it.</p>
-          <ol className="steps" aria-label="Progress">
-            {['Your look', 'Touchstones', 'Shortlist'].map((l, i) => (
-              <li key={l} className={step === i + 1 ? 'now' : step > i + 1 ? 'done' : ''}>
-                {step > i + 1 ? (
-                  <button type="button" onClick={() => goTo(i + 1)}>
-                    {l}
-                  </button>
-                ) : (
-                  l
-                )}
-              </li>
-            ))}
-          </ol>
+          {started && (
+            <button type="button" className="restart" onClick={startOver}>
+              New look
+            </button>
+          )}
         </div>
       </div>
       <main className="wrap">
-        {error && (
-          <p role="alert" className="error">
-            {error}
-          </p>
-        )}
-        {busy && (
-          <p className="busy" aria-live="polite">
-            <i />
-            {busy}
-          </p>
-        )}
-
-        {step === 1 && (
+        {!started && (
           <>
             <section>
               <h2 className="eyebrow">Try a sample look</h2>
@@ -221,65 +324,7 @@ export function App() {
                   </select>
                 </label>
               </div>
-              <div
-                className="composer"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  attach(e.dataTransfer.files[0]);
-                }}
-              >
-                {photo && (
-                  <div className="attached">
-                    <img alt="Your outfit" src={`data:${photo.mimeType};base64,${photo.data}`} />
-                    <button type="button" aria-label="Remove photo" onClick={() => setPhoto(null)}>
-                      ×
-                    </button>
-                  </div>
-                )}
-                <textarea
-                  aria-label="What are you wearing and where are you headed?"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                      e.preventDefault();
-                      if (canSend) suggest();
-                    }
-                  }}
-                  onPaste={(e) => {
-                    const f = [...e.clipboardData.files].find((x) => x.type.startsWith('image/'));
-                    if (f) {
-                      e.preventDefault();
-                      attach(f);
-                    }
-                  }}
-                  rows={3}
-                  maxLength={1000}
-                  placeholder="What are you wearing and where are you headed? Add or drop a photo too."
-                />
-                <div className="cbar">
-                  <label className="attach">
-                    📷 {photo ? 'Change photo' : 'Add photo'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="sr"
-                      onChange={(e) => attach(e.target.files?.[0])}
-                    />
-                  </label>
-                  <small>Photos go to Gemini only and are never stored.</small>
-                  <button
-                    type="button"
-                    className="send"
-                    aria-label="Send"
-                    disabled={!canSend}
-                    onClick={() => suggest()}
-                  >
-                    ↑
-                  </button>
-                </div>
-              </div>
+              {composer}
               <details className="more">
                 <summary>More options</summary>
                 <fieldset>
@@ -311,193 +356,106 @@ export function App() {
           </>
         )}
 
-        {step === 2 && suggestion && (
-          <section className="card">
-            <div className="pickhead">
-              <h2>Which of these feel like you?</h2>
-              <span className={picked.length ? 'count ok' : 'count'}>
-                {picked.length}/5 · {picked.length ? 'tap again to remove' : 'pick at least 1'}
-              </span>
-            </div>
-            <p className="read">
-              <em>How we read your look:</em> {suggestion.summary}
-            </p>
-            {suggestion.followUp && (
-              <label>
-                {suggestion.followUp}
-                <input value={answer} onChange={(e) => setAnswer(e.target.value)} maxLength={300} />
-              </label>
-            )}
-            <div className="cats">
-              {(Object.entries(suggestion.carousels) as [Kind, Entity[]][]).map(([kind, list]) => (
-                <div key={kind} className="cat">
-                  <h3>{KIND_LABEL[kind] ?? kind}</h3>
-                  <div className="chips">
-                    {list.map((e) => (
-                      <button
-                        type="button"
-                        key={e.entityId}
-                        className={
-                          picked.some((x) => x.entityId === e.entityId) ? 'tile on' : 'tile'
-                        }
-                        onClick={() => toggle(e)}
-                      >
-                        <i>{picked.some((x) => x.entityId === e.entityId) ? '✓' : '+'}</i>
-                        {e.name}
-                      </button>
-                    ))}
+        {started && (
+          <div className="thread">
+            {msgs.map((m, i) => {
+              if (m.kind === 'user')
+                return (
+                  <div key={i} className="bubble user">
+                    {m.photo && (
+                      <img
+                        className="ph"
+                        alt="Your outfit"
+                        src={`data:${m.photo.mimeType};base64,${m.photo.data}`}
+                      />
+                    )}
+                    <p>{m.text}</p>
+                    {m.tags && (
+                      <div className="tags">
+                        {m.tags.map((t) => (
+                          <span key={t} className="chip">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
-            </div>
-            <Custom onPick={toggle} />
-            <div>
-              {picked
-                .filter(
-                  (p) =>
-                    !Object.values(suggestion.carousels)
-                      .flat()
-                      .some((e) => e?.entityId === p.entityId),
-                )
-                .map((p) => (
-                  <span key={p.entityId} className="chip on">
-                    {p.name}
-                  </span>
-                ))}
-            </div>
-            <div className="row actions">
-              <button onClick={() => goTo(1)}>Back</button>
-              <button
-                className="primary"
-                disabled={!!busy || picked.length < 1}
-                onClick={() => recommend()}
-              >
-                {picked.length < 1 ? 'Pick at least one to continue' : 'Find my fragrances'}
-              </button>
-            </div>
-          </section>
-        )}
-
-        {step === 3 && result && (
-          <>
-            <button type="button" className="back" onClick={() => goTo(2)}>
-              ← Back to touchstones
-            </button>
-            <section className="card qloo">
-              <h2>
-                <span className="badge">Qloo</span> What the taste graph returned
-              </h2>
-              <p className="muted">Entities you confirmed</p>
-              <div>
-                {result.qloo.entities.map((e) => (
-                  <span key={e.entityId} className="chip on">
-                    {KIND_LABEL[e.kind] ?? e.kind}: {e.name}
-                  </span>
-                ))}
-              </div>
-              <p className="muted">Style cues Qloo associates with them. Tap one to drop it.</p>
-              {Array.from(
-                new Set([...result.qloo.tags, ...result.qloo.dropped].map((t) => t.group)),
-              ).map((group) => (
-                <div key={group} className="taggroup">
-                  <small>{group}</small>
-                  {result.qloo.tags
-                    .filter((t) => t.group === group)
-                    .map((t) => (
-                      <button
-                        key={t.id}
-                        className="chip on"
-                        onClick={() => {
-                          const next = [...off, t.id];
-                          setOff(next);
-                          recommend(prefs, next);
-                        }}
-                      >
-                        {t.name} ✕
-                      </button>
-                    ))}
-                  {result.qloo.dropped
-                    .filter((t) => t.group === group)
-                    .map((t) => (
-                      <button
-                        key={t.id}
-                        className="chip"
-                        onClick={() => {
-                          const next = off.filter((x) => x !== t.id);
-                          setOff(next);
-                          recommend(prefs, next);
-                        }}
-                      >
-                        {t.name} (off)
-                      </button>
-                    ))}
-                </div>
-              ))}
-            </section>
-            <section className="card">
-              <h2>
-                <span className="badge ai">Gemini</span> How we read it
-              </h2>
-              <ul>
-                {result.brief.because.map((b, i) => (
-                  <li key={i}>
-                    <strong>{b.cue}</strong>: {b.effect}
-                  </li>
-                ))}
-              </ul>
-              <div className="brief">
-                {result.brief.wantAccords.map((a) => (
-                  <span key={a.name} className="dot" style={{ background: tint(a.name) }}>
-                    {pretty(a.name)}
-                  </span>
-                ))}
-                {[...result.brief.vibes, ...result.brief.occasions, ...result.brief.seasons].map(
-                  (x) => (
-                    <span key={x} className="chip">
-                      {x}
-                    </span>
-                  ),
-                )}
-              </div>
-            </section>
-            <section>
-              <h2 className="eyebrow">Your shortlist</h2>
-              {!result.items.length && (
-                <p>
-                  Nothing matched those limits. Try a bigger budget or removing a “nothing too…”.
-                </p>
-              )}
-              {result.items.map((it) => (
-                <Card key={it.id} it={it} />
-              ))}
-              <div className="row">
-                {REACTIONS.map(([l, add]) => (
-                  <button
-                    key={l}
-                    disabled={!!busy}
-                    onClick={() => {
-                      const p = [prefs, add].filter(Boolean).join('; ');
-                      setPrefs(p);
-                      recommend(p);
-                    }}
-                  >
-                    {l}
-                  </button>
-                ))}
-                <button onClick={() => setResult(null)}>Swap cultural vibe</button>
-                <button
-                  onClick={() => {
-                    reset();
-                    setText('');
-                    setPhoto(null);
+                );
+              if (m.kind === 'ai')
+                return (
+                  <div key={i} className="bubble ai">
+                    <small className="who">
+                      <span className="badge ai">Gemini</span> how I read it
+                    </small>
+                    <p>{m.text}</p>
+                    {m.question && <p className="q">{m.question}</p>}
+                  </div>
+                );
+              if (m.kind === 'touch')
+                return i === lastTouch && suggestion ? (
+                  <div key={i} className="bubble ai wide">
+                    <small className="who">
+                      <span className="badge">Qloo</span> cultural touchstones
+                    </small>
+                    <Touchstones
+                      suggestion={suggestion}
+                      picked={picked}
+                      toggle={toggle}
+                      live={stage === 'touch'}
+                      busy={!!busy}
+                      onFind={findFragrances}
+                    />
+                  </div>
+                ) : null;
+              return (
+                <ResultMsg
+                  key={i}
+                  result={m.result}
+                  live={i === lastResult && stage === 'result'}
+                  off={off}
+                  busy={!!busy}
+                  onDrop={(next) => {
+                    setOff(next);
+                    recommend(prefs, next);
                   }}
-                >
-                  Start over
-                </button>
+                  onReact={(add) => {
+                    const p = [prefs, add].filter(Boolean).join('; ');
+                    setPrefs(p);
+                    push({ kind: 'user', text: add });
+                    recommend(p);
+                  }}
+                  onSwap={() => push({ kind: 'touch', id: Date.now() })}
+                />
+              );
+            })}
+            {busy && (
+              <div className="bubble ai">
+                <p className="busy" aria-live="polite">
+                  <i />
+                  {busy}
+                </p>
               </div>
-            </section>
-          </>
+            )}
+            {error && (
+              <p role="alert" className="error">
+                {error}
+              </p>
+            )}
+            <div ref={end} />
+          </div>
         )}
+        {!started && error && (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        )}
+        {!started && busy && (
+          <p className="busy" aria-live="polite">
+            <i />
+            {busy}
+          </p>
+        )}
+        {started && <div className="dock">{composer}</div>}
         <footer className="muted">
           Qloo supplies cultural associations only. Fragrance data and wearing estimates come from
           Fragologist and are estimates, not measurements.
@@ -510,6 +468,199 @@ export function App() {
           )}
         </footer>
       </main>
+    </>
+  );
+}
+
+function Touchstones({
+  suggestion,
+  picked,
+  toggle,
+  live,
+  busy,
+  onFind,
+}: {
+  suggestion: Suggestion;
+  picked: Entity[];
+  toggle: (e: Entity) => void;
+  live: boolean;
+  busy: boolean;
+  onFind: () => void;
+}) {
+  if (!live)
+    return (
+      <p>
+        You picked <b>{picked.map((p) => p.name).join(', ') || 'nothing'}</b>.
+      </p>
+    );
+  const inCarousel = Object.values(suggestion.carousels)
+    .flat()
+    .map((e) => e?.entityId);
+  return (
+    <>
+      <div className="pickhead">
+        <h2>Which of these feel like you?</h2>
+        <span className={picked.length ? 'count ok' : 'count'}>
+          {picked.length}/5 · {picked.length ? 'tap again to remove' : 'pick at least 1'}
+        </span>
+      </div>
+      <div className="cats">
+        {(Object.entries(suggestion.carousels) as [Kind, Entity[]][]).map(([kind, list]) => (
+          <div key={kind} className="cat">
+            <h3>{KIND_LABEL[kind] ?? kind}</h3>
+            <div className="chips">
+              {list.map((e) => {
+                const on = picked.some((x) => x.entityId === e.entityId);
+                return (
+                  <button
+                    type="button"
+                    key={e.entityId}
+                    className={on ? 'tile on' : 'tile'}
+                    onClick={() => toggle(e)}
+                  >
+                    <i>{on ? '✓' : '+'}</i>
+                    {e.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <Custom onPick={toggle} />
+      <div>
+        {picked
+          .filter((p) => !inCarousel.includes(p.entityId))
+          .map((p) => (
+            <span key={p.entityId} className="chip on">
+              {p.name}
+            </span>
+          ))}
+      </div>
+      <div className="row actions">
+        <button className="primary" disabled={busy || picked.length < 1} onClick={onFind}>
+          {picked.length < 1 ? 'Pick at least one to continue' : 'Find my fragrances'}
+        </button>
+      </div>
+    </>
+  );
+}
+
+function ResultMsg({
+  result,
+  live,
+  off,
+  busy,
+  onDrop,
+  onReact,
+  onSwap,
+}: {
+  result: Result;
+  live: boolean;
+  off: string[];
+  busy: boolean;
+  onDrop: (next: string[]) => void;
+  onReact: (add: string) => void;
+  onSwap: () => void;
+}) {
+  if (!live)
+    return (
+      <div className="bubble ai">
+        <small className="who">Earlier shortlist</small>
+        <p>{result.items.map((i) => `${i.name} (${i.house})`).join(' · ') || 'No matches.'}</p>
+      </div>
+    );
+  return (
+    <>
+      <div className="bubble ai wide qloo">
+        <small className="who">
+          <span className="badge">Qloo</span> what the taste graph returned
+        </small>
+        <p className="muted">Entities you confirmed</p>
+        <div>
+          {result.qloo.entities.map((e) => (
+            <span key={e.entityId} className="chip on">
+              {KIND_LABEL[e.kind] ?? e.kind}: {e.name}
+            </span>
+          ))}
+        </div>
+        <p className="muted">Style cues Qloo associates with them. Tap one to drop it.</p>
+        {Array.from(new Set([...result.qloo.tags, ...result.qloo.dropped].map((t) => t.group))).map(
+          (group) => (
+            <div key={group} className="taggroup">
+              <small>{group}</small>
+              {result.qloo.tags
+                .filter((t) => t.group === group)
+                .map((t) => (
+                  <button
+                    key={t.id}
+                    className="chip on"
+                    disabled={busy}
+                    onClick={() => onDrop([...off, t.id])}
+                  >
+                    {t.name} ✕
+                  </button>
+                ))}
+              {result.qloo.dropped
+                .filter((t) => t.group === group)
+                .map((t) => (
+                  <button
+                    key={t.id}
+                    className="chip"
+                    disabled={busy}
+                    onClick={() => onDrop(off.filter((x) => x !== t.id))}
+                  >
+                    {t.name} (off)
+                  </button>
+                ))}
+            </div>
+          ),
+        )}
+      </div>
+      <div className="bubble ai wide">
+        <small className="who">
+          <span className="badge ai">Gemini</span> how I turned that into a scent brief
+        </small>
+        <ul>
+          {result.brief.because.map((b, i) => (
+            <li key={i}>
+              <strong>{b.cue}</strong>: {b.effect}
+            </li>
+          ))}
+        </ul>
+        <div className="brief">
+          {result.brief.wantAccords.map((a) => (
+            <span key={a.name} className="dot" style={{ background: tint(a.name) }}>
+              {pretty(a.name)}
+            </span>
+          ))}
+          {[...result.brief.vibes, ...result.brief.occasions, ...result.brief.seasons].map((x) => (
+            <span key={x} className="chip">
+              {x}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="bubble ai wide">
+        <small className="who">Your shortlist</small>
+        {!result.items.length && (
+          <p>Nothing matched those limits. Try a bigger budget or removing a “nothing too…”.</p>
+        )}
+        {result.items.map((it) => (
+          <Card key={it.id} it={it} />
+        ))}
+        <div className="row">
+          {REACTIONS.map(([l, add]) => (
+            <button key={l} disabled={busy} onClick={() => onReact(add)}>
+              {l}
+            </button>
+          ))}
+          <button disabled={busy} onClick={onSwap}>
+            Swap touchstones
+          </button>
+        </div>
+        <small className="muted">Or type below to refine in your own words.</small>
+      </div>
     </>
   );
 }

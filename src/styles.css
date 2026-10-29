@@ -806,3 +806,67 @@ main.wrap {
 .chips .tile.on i {
   color: #fff;
 }
+
+/* chat thread */
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0 8px;
+}
+.bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.bubble.wide {
+  max-width: 100%;
+}
+.bubble p {
+  margin: 4px 0;
+}
+.bubble.user {
+  align-self: flex-end;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  border-bottom-right-radius: 4px;
+}
+.bubble.ai {
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+.bubble .who {
+  display: block;
+  margin-bottom: 4px;
+}
+.bubble .q {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--fg);
+}
+.bubble .ph {
+  max-height: 120px;
+  border-radius: 8px;
+  display: block;
+  margin-bottom: 6px;
+}
+.bubble .tags {
+  margin-top: 4px;
+}
+.bubble .card.item {
+  margin: 10px 0;
+}
+.dock {
+  position: sticky;
+  bottom: 0;
+  padding: 10px 0 12px;
+  background: linear-gradient(#0000, var(--bg) 24%);
+}
+.dock .composer {
+  background: var(--surface);
+}
+.restart {
+  margin-left: auto;
+}
