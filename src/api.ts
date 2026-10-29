@@ -10,7 +10,7 @@ export type Kind =
   | 'podcast'
   | 'video_game';
 export type Entity = { entityId: string; name: string; kind: Kind };
-export type Tag = { id: string; name: string };
+export type Tag = { id: string; name: string; group: string };
 export type Suggestion = {
   summary: string;
   followUp: string | null;
@@ -21,13 +21,20 @@ export type Item = {
   name: string;
   house: string;
   concentration?: string | null;
-  price_usd?: number | null;
-  accords: string[];
+  year?: number | null;
+  price?: { amount: number; currency: string; size_ml?: number | null } | null;
+  top_accords: { name: string; weight: number }[];
+  family?: string | null;
+  notes?: { top: string[]; heart: string[]; base: string[] } | null;
   sillage?: string | null;
   longevity?: string | null;
+  seasons?: Record<string, number> | null;
+  occasions?: string[] | null;
+  vibes?: string[] | null;
   has_wearing_profile: boolean;
-  match_reasons: string[];
-  public_url?: string | null;
+  public_dossier_url?: string | null;
+  score: number;
+  match_reasons: { field: string; values: string[]; contribution: number }[];
 };
 export type Brief = {
   wantAccords: { name: string; weight: number }[];

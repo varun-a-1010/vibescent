@@ -13,14 +13,23 @@ export const PRIMARY_KINDS = [
 export const SECONDARY_KINDS = ['place', 'book', 'podcast', 'video_game'] as const;
 export type Kind = (typeof PRIMARY_KINDS)[number] | (typeof SECONDARY_KINDS)[number];
 export type Entity = { entityId: string; name: string; kind: Kind };
-export type StyleTag = { id: string; name: string };
-/** The only tag namespace verified to give clean style descriptors; others were noisy. */
-export const STYLE_NAMESPACES = ['urn:tag:aesthetic_property:qloo'];
+export type StyleTag = { id: string; name: string; group: string };
+/**
+ * Tag namespaces used as style evidence (checked live 2026-10-29). `aesthetic_property` alone was
+ * mostly silhouette words, so personal style and emotional tone lead and it is capped.
+ */
+export const STYLE_NAMESPACES = [
+  { type: 'urn:tag:personal_style:qloo', group: 'Style', take: 8 },
+  { type: 'urn:tag:emotional_tone:qloo', group: 'Mood', take: 6 },
+  { type: 'urn:tag:aesthetic_property:qloo', group: 'Look', take: 6 },
+  { type: 'urn:tag:ambience:qloo', group: 'Setting', take: 4 },
+] as const;
+const MAX_SILHOUETTE_TAGS = 1;
 
 export interface Qloo {
   search(query: string, kind: Kind): Promise<Entity[]>;
   /** Describing tags for a set of confirmed entities (taste analysis), style namespaces only. */
-  styleTags(entityIds: string[], take?: number): Promise<StyleTag[]>;
+  styleTags(entityIds: string[]): Promise<StyleTag[]>;
 }
 
 const record = (v: unknown): Record<string, unknown> =>
@@ -40,7 +49,7 @@ export function parseEntity(raw: unknown, kind: Kind): Entity | null {
   return { entityId: String(r.entity_id).toUpperCase(), name: text(r.name), kind };
 }
 
-export function parseTags(raw: unknown): StyleTag[] {
+export function parseTags(raw: unknown, group = ''): StyleTag[] {
   const seen = new Set<string>();
   return array(raw).flatMap((t) => {
     const r = record(t);
@@ -48,7 +57,7 @@ export function parseTags(raw: unknown): StyleTag[] {
     const id = text(r.tag_id ?? r.id, 200);
     if (!name || !id || seen.has(id)) return [];
     seen.add(id);
-    return [{ id, name }];
+    return [{ id, name, group }];
   });
 }
 
@@ -83,7 +92,7 @@ export function createQloo(
         .map((r) => parseEntity(r, kind))
         .filter((e): e is Entity => e !== null);
     },
-    async styleTags(entityIds, take = 12) {
+    async styleTags(entityIds) {
       const ids = [
         ...new Set(
           z
@@ -94,13 +103,35 @@ export function createQloo(
             .map((s) => s.toUpperCase()),
         ),
       ];
-      const data = await get('/v2/insights', {
-        'filter.type': 'urn:tag',
-        'signal.interests.entities': ids.join(','),
-        'filter.tag.types': STYLE_NAMESPACES.join(','),
-        take: String(take),
+      const groups = await Promise.all(
+        STYLE_NAMESPACES.map(async (ns) => {
+          try {
+            const data = await get('/v2/insights', {
+              'filter.type': 'urn:tag',
+              'signal.interests.entities': ids.join(','),
+              'filter.tag.types': ns.type,
+              take: String(ns.take + 6),
+            });
+            return limitSilhouettes(parseTags(record(data.results).tags, ns.group)).slice(
+              0,
+              ns.take,
+            );
+          } catch {
+            return []; // one namespace failing should not lose the others
+          }
+        }),
+      );
+      const seen = new Set<string>();
+      return groups.flat().filter((t) => {
+        const key = t.name.toLowerCase();
+        return seen.has(key) ? false : (seen.add(key), true);
       });
-      return parseTags(record(data.results).tags);
     },
   };
+}
+
+/** Silhouette variants dominate the look namespace and say little; keep one. */
+export function limitSilhouettes(tags: StyleTag[]): StyleTag[] {
+  let kept = 0;
+  return tags.filter((t) => !/silhouette/i.test(t.name) || ++kept <= MAX_SILHOUETTE_TAGS);
 }

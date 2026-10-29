@@ -7,13 +7,30 @@ export const recommendationSchema = z.object({
   name: z.string(),
   house: z.string(),
   concentration: z.string().nullish(),
-  price_usd: z.number().nullish(),
-  accords: z.array(z.string()),
+  year: z.number().nullish(),
+  gender: z.string().nullish(),
+  price: z
+    .object({ amount: z.number(), currency: z.string(), size_ml: z.number().nullish() })
+    .nullish(),
+  top_accords: z.array(z.object({ name: z.string(), weight: z.number() })),
+  family: z.string().nullish(),
+  notes: z
+    .object({ top: z.array(z.string()), heart: z.array(z.string()), base: z.array(z.string()) })
+    .nullish(),
   sillage: z.string().nullish(),
   longevity: z.string().nullish(),
+  seasons: z.record(z.string(), z.number()).nullish(),
+  occasions: z.array(z.string()).nullish(),
+  vibes: z.array(z.string()).nullish(),
+  time_of_day: z.array(z.string()).nullish(),
+  formality: z.array(z.string()).nullish(),
   has_wearing_profile: z.boolean(),
-  match_reasons: z.array(z.string()),
-  public_url: z.string().nullish(),
+  profile_confidence: z.string().nullish(),
+  public_dossier_url: z.string().nullish(),
+  score: z.number(),
+  match_reasons: z.array(
+    z.object({ field: z.string(), values: z.array(z.string()), contribution: z.number() }),
+  ),
 });
 export type Recommendation = z.infer<typeof recommendationSchema>;
 
@@ -37,6 +54,10 @@ export function createHttpCatalog(options: {
       redirect: 'error',
       signal: AbortSignal.timeout(options.timeoutMs ?? 15_000),
     });
+    if (response.status === 429)
+      throw Object.assign(new Error('The fragrance catalog is busy. Try again in a few seconds.'), {
+        statusCode: 429,
+      });
     if (!response.ok) throw new Error(`Catalog ${path} returned HTTP ${response.status}`);
     return response.json();
   }

@@ -25,6 +25,28 @@ if (!env.QLOO_API_KEY) {
     console.warn('No Qloo key available from Doppler shared/dev_mac; Qloo stays disconnected.');
   }
 }
+if (!env.FRAGOLOGIST_API_KEY) {
+  try {
+    env.FRAGOLOGIST_API_KEY = execFileSync(
+      'doppler',
+      [
+        'secrets',
+        'get',
+        'RECOMMENDATION_API_KEY',
+        '--project',
+        'fragologist',
+        '--config',
+        'prd',
+        '--plain',
+      ],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    ).trim();
+  } catch {
+    console.warn(
+      'No Fragologist recommendation key from Doppler fragologist/prd; catalog stays disconnected.',
+    );
+  }
+}
 const child = spawn(args[0], args.slice(1), { env, stdio: 'inherit' });
 for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => child.kill(signal));
 child.on('exit', (code) => process.exit(code ?? 1));

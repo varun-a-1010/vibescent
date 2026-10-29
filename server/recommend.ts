@@ -45,7 +45,15 @@ export async function recommend(
     },
     vocab,
   );
-  const items = await deps.catalog.recommend(toCatalogRequest(brief, input.constraints));
+  // The catalog rejects unknown terms, so hard exclusions are checked against its vocabulary first.
+  const known = (terms: string[], allowed: string[]) =>
+    terms.filter((t) => allowed.includes(t.toLowerCase()));
+  const constraints = {
+    ...input.constraints,
+    excludeAccords: known(input.constraints.excludeAccords, vocab.accords),
+    excludeNotes: known(input.constraints.excludeNotes, vocab.notes),
+  };
+  const items = await deps.catalog.recommend(toCatalogRequest(brief, constraints));
   return {
     qloo: { entities: input.entities, tags, dropped: allTags.filter((t) => off.has(t.id)) },
     brief,

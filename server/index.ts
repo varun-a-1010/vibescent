@@ -2,7 +2,6 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildApp } from './app';
 import { createHttpCatalog } from './catalog';
-import { loadDevCatalog } from './devCatalog';
 import { createQloo } from './qloo';
 import { createGeminiSuggester } from './suggester';
 import { createGeminiTranslator } from './translator';
@@ -14,18 +13,14 @@ const vertex = {
   location: env.VERTEX_LLM_REGION,
 };
 const hasVertex = Boolean(vertex.project && vertex.serviceAccount);
-let catalog;
-let catalogLabel: 'fragologist' | 'dev-export' | undefined;
-if (env.FRAGOLOGIST_API_URL && env.FRAGOLOGIST_API_KEY) {
-  catalog = createHttpCatalog({
-    baseUrl: env.FRAGOLOGIST_API_URL,
-    apiKey: env.FRAGOLOGIST_API_KEY,
-  });
-  catalogLabel = 'fragologist';
-} else if (existsSync('.data/catalog.json')) {
-  catalog = loadDevCatalog();
-  catalogLabel = 'dev-export';
-}
+const catalogKey = env.FRAGOLOGIST_API_KEY;
+const catalog = catalogKey
+  ? createHttpCatalog({
+      baseUrl: env.FRAGOLOGIST_API_URL ?? 'https://fragologist.buzz',
+      apiKey: catalogKey,
+    })
+  : undefined;
+const catalogLabel = catalog ? ('fragologist' as const) : undefined;
 const app = buildApp({
   qloo: env.QLOO_API_KEY ? createQloo({ apiKey: env.QLOO_API_KEY }) : undefined,
   suggester: hasVertex ? createGeminiSuggester(vertex) : undefined,

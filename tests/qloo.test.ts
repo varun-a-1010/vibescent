@@ -9,19 +9,32 @@ const fake = (body: unknown, capture?: (u: URL) => void): typeof fetch =>
   }) as typeof fetch;
 
 describe('qloo client', () => {
-  it('asks only for style-namespace tags and parses them', async () => {
-    let url!: URL;
+  it('merges style namespaces, dedupes and keeps one silhouette tag', async () => {
+    const urls: URL[] = [];
     const qloo = createQloo({
       apiKey: 'k',
       fetch: fake(
-        { results: { tags: [{ tag_id: 'a', name: 'Rugged Utility' }, { name: 'bad' }] } },
-        (u) => (url = u),
+        {
+          results: {
+            tags: [
+              { tag_id: 'a', name: 'Bold Silhouettes' },
+              { tag_id: 'b', name: 'Oversized Silhouettes' },
+              { tag_id: 'c', name: 'Edgy' },
+              { name: 'bad' },
+            ],
+          },
+        },
+        (u) => urls.push(u),
       ),
     });
     const tags = await qloo.styleTags([id]);
-    expect(tags).toEqual([{ id: 'a', name: 'Rugged Utility' }]);
-    expect(url.searchParams.get('filter.tag.types')).toBe('urn:tag:aesthetic_property:qloo');
-    expect(url.searchParams.get('filter.type')).toBe('urn:tag');
+    // Every namespace returns the same fake list, so dedupe by name leaves each name once.
+    expect(tags.map((t) => t.name)).toEqual(['Bold Silhouettes', 'Edgy']);
+    expect(tags[0].group).toBe('Style');
+    expect(urls.map((u) => u.searchParams.get('filter.tag.types'))).toContain(
+      'urn:tag:personal_style:qloo',
+    );
+    expect(urls.every((u) => u.searchParams.get('filter.type') === 'urn:tag')).toBe(true);
   });
   it('rejects a non-uuid entity id', async () => {
     const qloo = createQloo({ apiKey: 'k', fetch: fake({ results: {} }) });

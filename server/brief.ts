@@ -26,7 +26,7 @@ export function createBriefSchema(vocab: Vocab, options: { wire?: boolean } = {}
   const list = (values: string[], max: number) => z.array(pick(values)).max(max);
   return z.object({
     wantAccords: z
-      .array(z.object({ name: pick(vocab.accords), weight: z.number().min(0).max(1) }))
+      .array(z.object({ name: pick(vocab.accords), weight: z.number().min(0.05).max(1) }))
       .max(8),
     families: list(vocab.families, 3),
     seasons: list(vocab.seasons, 4),
@@ -49,19 +49,22 @@ export type ScentBrief = Omit<z.infer<ReturnType<typeof createBriefSchema>>, 'vi
  * are attached to the request exactly as given.
  */
 export function toCatalogRequest(brief: ScentBrief, constraints: Constraints, limit = 5) {
+  const uniq = <T>(xs: T[]) => [...new Set(xs)];
   const banned = new Set(constraints.excludeAccords.map((a) => a.toLowerCase()));
   return {
     ...(constraints.budgetMaxUsd !== undefined ? { budget_max_usd: constraints.budgetMaxUsd } : {}),
     gender: constraints.gender,
-    exclude_accords: constraints.excludeAccords,
-    exclude_notes: constraints.excludeNotes,
-    want_accords: brief.wantAccords.filter((a) => !banned.has(a.name.toLowerCase())),
-    families: brief.families.filter((f) => !banned.has(f.toLowerCase())),
-    seasons: brief.seasons,
-    occasions: brief.occasions,
-    vibes: brief.vibes,
-    sillage: brief.sillage,
-    longevity: brief.longevity,
+    exclude_accords: uniq(constraints.excludeAccords),
+    exclude_notes: uniq(constraints.excludeNotes),
+    want_accords: brief.wantAccords
+      .filter((a, i, all) => all.findIndex((b) => b.name === a.name) === i)
+      .filter((a) => !banned.has(a.name.toLowerCase())),
+    families: uniq(brief.families).filter((f) => !banned.has(f.toLowerCase())),
+    seasons: uniq(brief.seasons),
+    occasions: uniq(brief.occasions),
+    vibes: uniq(brief.vibes),
+    sillage: uniq(brief.sillage),
+    longevity: uniq(brief.longevity),
     limit,
   };
 }

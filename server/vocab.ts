@@ -13,6 +13,7 @@ export const vocabSchema = z.object({
   sillage: z.array(z.string()).min(1),
   longevity: z.array(z.string()).min(1),
   vibes: z.array(z.string()),
+  notes: z.array(z.string()).default([]),
 });
 export type Vocab = z.infer<typeof vocabSchema>;
 
@@ -36,4 +37,5 @@ export const PROVISIONAL_VOCAB: Vocab = {
   sillage: ['skin-scent', 'intimate', 'moderate', 'room-filling', 'enormous'],
   longevity: ['fleeting', 'moderate', 'long', 'very-long'],
   vibes: [],
+  notes: [],
 };

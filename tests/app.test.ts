@@ -6,7 +6,7 @@ import { PROVISIONAL_VOCAB } from '../server/vocab';
 const id = '11111111-1111-4111-8111-111111111111';
 const qloo = {
   search: async (q: string, kind: any) => [{ entityId: id, name: q, kind }],
-  styleTags: async () => [{ id: 't', name: 'Sleek' }],
+  styleTags: async () => [{ id: 't', name: 'Sleek', group: 'Style' }],
 };
 const brief = {
   wantAccords: [],

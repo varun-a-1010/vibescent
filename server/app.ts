@@ -12,7 +12,7 @@ export type Deps = {
   suggester?: Suggester;
   translator?: Translator;
   catalog?: Catalog;
-  catalogLabel?: 'fragologist' | 'dev-export';
+  catalogLabel?: 'fragologist';
 };
 
 const kind = z.enum([...PRIMARY_KINDS, ...SECONDARY_KINDS]);
@@ -62,7 +62,8 @@ export function buildApp(deps: Deps): FastifyInstance {
   app.setErrorHandler((error: Error & { statusCode?: number }, _req, reply) => {
     if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Invalid request.' });
     const code = error.statusCode && error.statusCode < 500 ? error.statusCode : 502;
-    if (error.statusCode === 503) return reply.code(503).send({ error: error.message });
+    if (error.statusCode === 503 || error.statusCode === 429)
+      return reply.code(error.statusCode).send({ error: error.message });
     console.error('request failed:', error.message);
     return reply.code(code).send({ error: 'That step failed. Please try again.' });
   });

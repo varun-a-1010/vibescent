@@ -12,7 +12,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run format:check && npm test && npm run build",
-    "export:catalog": "~/code/aux-apps/fragologist/node_modules/.bin/tsx scripts/export-dev-catalog.ts",
     "probe:brief": "node scripts/with-keys.mjs tsx scripts/probe-brief.ts",
     "probe": "node scripts/with-keys.mjs tsx scripts/probe-tags.ts",
     "dev": "node scripts/with-keys.mjs concurrently -k -n api,web \"tsx watch server/index.ts\" \"vite --host 127.0.0.1\"",
@@ -20,7 +19,9 @@
   },
   "dependencies": {
     "@fastify/static": "^10.1.8",
+    "@fontsource/cormorant-garamond": "^5.3.0",
     "@fontsource/dm-sans": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
     "@google/genai": "2.30.0",
     "fastify": "^5.12.7",
     "react": "^19.3.1",

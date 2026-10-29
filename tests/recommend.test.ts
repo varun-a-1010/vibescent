@@ -28,8 +28,8 @@ function deps() {
       qloo: {
         search: async () => [],
         styleTags: async () => [
-          { id: 't1', name: 'Rugged Utility' },
-          { id: 't2', name: 'Noisy' },
+          { id: 't1', name: 'Rugged Utility', group: 'Style' },
+          { id: 't2', name: 'Noisy', group: 'Style' },
         ],
       },
       translator: {
