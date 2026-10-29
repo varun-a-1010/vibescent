@@ -546,13 +546,13 @@ footer {
   padding-right: 52px;
 }
 
-.composer .bar {
+.composer .cbar {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
-.composer .bar .attach {
+.composer .cbar .attach {
   margin: 0;
 }
 .composer .send {

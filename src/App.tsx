@@ -261,7 +261,7 @@ export function App() {
                   maxLength={1000}
                   placeholder="What are you wearing and where are you headed? Add or drop a photo too."
                 />
-                <div className="bar">
+                <div className="cbar">
                   <label className="attach">
                     📷 {photo ? 'Change photo' : 'Add photo'}
                     <input
