@@ -191,7 +191,7 @@ export function App() {
                 ))}
               </div>
             </section>
-            <section className="card">
+            <section className="plain">
               <div className="opts">
                 <label className="slider">
                   <span>{budget === undefined ? 'No budget limit' : `Up to $${budget}`}</span>

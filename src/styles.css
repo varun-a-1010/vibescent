@@ -684,3 +684,30 @@ main.wrap {
     flex-basis: 100%;
   }
 }
+
+.plain {
+  margin: 12px 0;
+}
+.wrap {
+  max-width: 960px;
+}
+.hero .wrap {
+  flex-wrap: nowrap;
+}
+.hero p {
+  font-size: 1.05rem;
+  min-width: 0;
+}
+.steps {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.steps li {
+  font-size: 0.68rem;
+  padding: 3px 10px;
+}
+@media (max-width: 720px) {
+  .hero .wrap {
+    flex-wrap: wrap;
+  }
+}
