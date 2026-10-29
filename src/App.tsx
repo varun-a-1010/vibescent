@@ -342,6 +342,7 @@ export function App() {
                         }
                         onClick={() => toggle(e)}
                       >
+                        <i>{picked.some((x) => x.entityId === e.entityId) ? '✓' : '+'}</i>
                         {e.name}
                       </button>
                     ))}
