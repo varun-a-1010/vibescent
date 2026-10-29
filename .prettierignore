@@ -1,0 +1,6 @@
+node_modules
+dist
+.data
+AGENTS.md
+package-lock.json
+docs/evidence
