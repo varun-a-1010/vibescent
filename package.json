@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run format:check && npm test && npm run build",
+    "export:catalog": "~/code/aux-apps/fragologist/node_modules/.bin/tsx scripts/export-dev-catalog.ts",
     "probe:brief": "node scripts/with-keys.mjs tsx scripts/probe-brief.ts",
     "probe": "node scripts/with-keys.mjs tsx scripts/probe-tags.ts"
   },

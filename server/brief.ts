@@ -38,7 +38,7 @@ export type ScentBrief = z.infer<ReturnType<typeof createBriefSchema>>;
 export function toCatalogRequest(brief: ScentBrief, constraints: Constraints, limit = 5) {
   const banned = new Set(constraints.excludeAccords.map((a) => a.toLowerCase()));
   return {
-    budget_max_usd: constraints.budgetMaxUsd,
+    ...(constraints.budgetMaxUsd !== undefined ? { budget_max_usd: constraints.budgetMaxUsd } : {}),
     gender: constraints.gender,
     exclude_accords: constraints.excludeAccords,
     exclude_notes: constraints.excludeNotes,
@@ -52,4 +52,6 @@ export function toCatalogRequest(brief: ScentBrief, constraints: Constraints, li
     limit,
   };
 }
-export type CatalogRequest = ReturnType<typeof toCatalogRequest>;
+export type CatalogRequest = Omit<ReturnType<typeof toCatalogRequest>, 'budget_max_usd'> & {
+  budget_max_usd?: number;
+};
