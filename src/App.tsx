@@ -96,14 +96,20 @@ export function App() {
   const attach = async (f?: File) => {
     if (f) setPhoto(await toPhoto(f).catch(() => null));
   };
-  const usePreset = (p: Preset) => {
+  const usePreset = async (p: Preset) => {
+    const sample = p.photo
+      ? await fetch(`/samples/${p.photo}`)
+          .then((r) => r.blob())
+          .then((b) => toPhoto(new File([b], p.photo!, { type: b.type })))
+          .catch(() => null)
+      : null;
     setText(p.look);
     setBudget(p.budget);
     setGender(p.gender);
     setAvoid(p.avoid);
     setPrefs(p.prefs);
-    setPhoto(null);
-    suggest(p.look, null);
+    setPhoto(sample);
+    suggest(p.look, sample);
   };
   const toggle = (e: Entity) =>
     setPicked((p) =>

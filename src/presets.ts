@@ -8,10 +8,72 @@ export type Preset = {
   prefs: string;
   /** Two colours for the card, chosen to suggest the mood. */
   colors: [string, string];
+  /** Optional faceless outfit photo in public/samples, sent to Gemini with the text. */
+  photo?: string;
 };
 
 /** Deliberately varied: seasons, formality, gender, budget and mood, so the demo shows range. */
 export const PRESETS: Preset[] = [
+  {
+    id: 'boardroom',
+    title: 'Client meeting',
+    look: 'Charcoal suit, crisp white shirt and polished oxfords for a nine o’clock meeting with a new client.',
+    budget: 150,
+    gender: 'masculine',
+    avoid: ['sweet', 'musk'],
+    prefs: 'clean and confident, not loud',
+    colors: ['#1f2a36', '#55708a'],
+  },
+  {
+    id: 'interview',
+    title: 'Job interview',
+    look: 'Navy blazer, silk blouse and tailored trousers for a final-round interview at a design firm.',
+    budget: 100,
+    gender: 'feminine',
+    avoid: ['sweet', 'powdery'],
+    prefs: 'polished but approachable, must not overpower a small room',
+    colors: ['#18253f', '#7a8fb8'],
+  },
+  {
+    id: 'hybrid',
+    title: 'Office day',
+    look: 'Knit polo, chinos and clean white sneakers for a long open-plan office day with lots of people nearby.',
+    budget: 80,
+    gender: 'any',
+    avoid: ['smoky', 'sweet'],
+    prefs: 'fresh, light, lasts the day without announcing itself',
+    colors: ['#27352b', '#8aa88f'],
+  },
+  {
+    id: 'dinner',
+    title: 'Client dinner',
+    look: 'Dark tailored dress and heels for a business dinner at a quiet restaurant in winter.',
+    budget: 250,
+    gender: 'feminine',
+    avoid: [],
+    prefs: 'refined and warm, memorable but not a party scent',
+    colors: ['#3a1a24', '#a35a6b'],
+  },
+  {
+    id: 'travel',
+    title: 'Red-eye flight',
+    look: 'Oversized grey hoodie, joggers and a puffer jacket for a long overnight flight and a cold arrival.',
+    budget: 60,
+    gender: 'unisex',
+    avoid: ['floral', 'sweet'],
+    prefs: 'comforting and subtle, easy on neighbours in a tight cabin',
+    colors: ['#222a38', '#6f7f99'],
+  },
+  {
+    id: 'gallery',
+    title: 'Gallery opening',
+    look: 'Black turtleneck, wide wool trousers and statement glasses at a gallery opening with wine in hand.',
+    budget: 300,
+    gender: 'any',
+    avoid: ['citrus'],
+    prefs: 'artsy and a little strange, something people ask about',
+    colors: ['#151515', '#6e6a62'],
+  },
   {
     id: 'rooftop',
     title: 'Rooftop leather',
