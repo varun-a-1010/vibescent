@@ -325,23 +325,27 @@ export function App() {
               Pick 1–5 that feel like you. These come from Qloo’s taste graph.{' '}
               <b>{picked.length}/5</b>
             </p>
-            {(Object.entries(suggestion.carousels) as [Kind, Entity[]][]).map(([kind, list]) => (
-              <div key={kind}>
-                <h3>{KIND_LABEL[kind] ?? kind}</h3>
-                <div className="carousel">
-                  {list.map((e) => (
-                    <button
-                      type="button"
-                      key={e.entityId}
-                      className={picked.some((x) => x.entityId === e.entityId) ? 'tile on' : 'tile'}
-                      onClick={() => toggle(e)}
-                    >
-                      {e.name}
-                    </button>
-                  ))}
+            <div className="cats">
+              {(Object.entries(suggestion.carousels) as [Kind, Entity[]][]).map(([kind, list]) => (
+                <div key={kind} className="cat">
+                  <h3>{KIND_LABEL[kind] ?? kind}</h3>
+                  <div className="chips">
+                    {list.map((e) => (
+                      <button
+                        type="button"
+                        key={e.entityId}
+                        className={
+                          picked.some((x) => x.entityId === e.entityId) ? 'tile on' : 'tile'
+                        }
+                        onClick={() => toggle(e)}
+                      >
+                        {e.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
             <Custom onPick={toggle} />
             <div>
               {picked
@@ -357,7 +361,7 @@ export function App() {
                   </span>
                 ))}
             </div>
-            <div className="row">
+            <div className="row actions">
               <button onClick={() => goTo(1)}>Back</button>
               <button
                 className="primary"

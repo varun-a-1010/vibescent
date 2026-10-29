@@ -711,3 +711,46 @@ main.wrap {
     flex-wrap: wrap;
   }
 }
+
+/* touchstones: use the width, keep actions in view */
+.cats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 4px 28px;
+}
+.cat h3 {
+  margin: 8px 0 4px;
+  font-size: 1.05rem;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chips .tile {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+.summary {
+  font-size: 1.1rem;
+  margin: 4px 0 8px;
+}
+.custom h3 {
+  margin: 10px 0 4px;
+  font-size: 1.05rem;
+}
+.custom .row {
+  margin-top: 4px;
+  flex-wrap: nowrap;
+}
+.custom .row select {
+  width: auto;
+}
+.actions {
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  padding: 10px 0;
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+}
