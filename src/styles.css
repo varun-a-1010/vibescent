@@ -569,3 +569,84 @@ footer {
 .composer .send:disabled {
   opacity: 0.4;
 }
+
+/* compact first screen */
+.hero {
+  padding: 14px 0 12px;
+  margin-bottom: 14px;
+}
+.hero .wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px 24px;
+  flex-wrap: wrap;
+}
+h1 {
+  font-size: 2rem;
+}
+.hero p {
+  flex: 1 1 260px;
+  font-size: 0.85rem;
+  margin: 0;
+  max-width: none;
+}
+.hero .steps {
+  margin-left: auto;
+}
+.presets {
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+.presets .preset {
+  flex-basis: 200px;
+  min-height: 0;
+  padding: 12px;
+}
+.preset b {
+  font-size: 1.15rem;
+}
+.preset span {
+  -webkit-line-clamp: 2;
+}
+.preset .pthumb {
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+}
+.preset:has(.pthumb) b {
+  padding-right: 40px;
+}
+.eyebrow {
+  margin: 0 0 8px;
+}
+.card {
+  margin: 10px 0;
+  padding: 12px;
+}
+.opts {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.opts select {
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  width: auto;
+  background: var(--surface);
+}
+.attached img {
+  max-height: 64px;
+}
+.more {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.more summary {
+  cursor: pointer;
+}
+main.wrap {
+  padding-bottom: 32px;
+}

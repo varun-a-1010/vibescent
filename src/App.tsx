@@ -199,31 +199,6 @@ export function App() {
               </div>
             </section>
             <section className="card">
-              <h2 className="eyebrow">Describe your look</h2>
-              <div className="row">
-                <label>
-                  Budget
-                  <select
-                    value={budget ?? ''}
-                    onChange={(e) => setBudget(e.target.value ? Number(e.target.value) : undefined)}
-                  >
-                    {BUDGETS.map(([l, v]) => (
-                      <option key={l} value={v ?? ''}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  For
-                  <select value={gender} onChange={(e) => setGender(e.target.value)}>
-                    <option value="any">Anyone</option>
-                    <option value="masculine">Masculine</option>
-                    <option value="feminine">Feminine</option>
-                    <option value="unisex">Unisex</option>
-                  </select>
-                </label>
-              </div>
               <div
                 className="composer"
                 onDragOver={(e) => e.preventDefault()}
@@ -240,6 +215,35 @@ export function App() {
                     </button>
                   </div>
                 )}
+                <div className="opts">
+                  <label>
+                    <select
+                      aria-label="Budget"
+                      value={budget ?? ''}
+                      onChange={(e) =>
+                        setBudget(e.target.value ? Number(e.target.value) : undefined)
+                      }
+                    >
+                      {BUDGETS.map(([l, v]) => (
+                        <option key={l} value={v ?? ''}>
+                          {l}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <select
+                      aria-label="For"
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                    >
+                      <option value="any">For anyone</option>
+                      <option value="masculine">For masculine</option>
+                      <option value="feminine">For feminine</option>
+                      <option value="unisex">For unisex</option>
+                    </select>
+                  </label>
+                </div>
                 <textarea
                   aria-label="What are you wearing and where are you headed?"
                   value={text}
@@ -283,30 +287,33 @@ export function App() {
                   </button>
                 </div>
               </div>
-              <fieldset>
-                <legend>Nothing too…</legend>
-                {AVOID.map((a) => (
-                  <button
-                    type="button"
-                    key={a}
-                    className={avoid.includes(a) ? 'chip on' : 'chip'}
-                    onClick={() =>
-                      setAvoid((v) => (v.includes(a) ? v.filter((x) => x !== a) : [...v, a]))
-                    }
-                  >
-                    {a}
-                  </button>
-                ))}
-              </fieldset>
-              <label>
-                Anything else?{' '}
-                <input
-                  value={prefs}
-                  onChange={(e) => setPrefs(e.target.value)}
-                  maxLength={500}
-                  placeholder="e.g. I hate anything that smells like candy"
-                />
-              </label>
+              <details className="more">
+                <summary>More options</summary>
+                <fieldset>
+                  <legend>Nothing too…</legend>
+                  {AVOID.map((a) => (
+                    <button
+                      type="button"
+                      key={a}
+                      className={avoid.includes(a) ? 'chip on' : 'chip'}
+                      onClick={() =>
+                        setAvoid((v) => (v.includes(a) ? v.filter((x) => x !== a) : [...v, a]))
+                      }
+                    >
+                      {a}
+                    </button>
+                  ))}
+                </fieldset>
+                <label>
+                  Anything else?{' '}
+                  <input
+                    value={prefs}
+                    onChange={(e) => setPrefs(e.target.value)}
+                    maxLength={500}
+                    placeholder="e.g. I hate anything that smells like candy"
+                  />
+                </label>
+              </details>
             </section>
           </>
         )}
