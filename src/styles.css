@@ -670,3 +670,17 @@ main.wrap {
   background: none;
   accent-color: var(--accent);
 }
+
+.hero p {
+  flex: 1 1 auto;
+  white-space: nowrap;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.15rem;
+}
+@media (max-width: 720px) {
+  .hero p {
+    white-space: normal;
+    flex-basis: 100%;
+  }
+}

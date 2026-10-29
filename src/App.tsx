@@ -140,10 +140,7 @@ export function App() {
           <h1>
             Vibe<span>Scent</span>
           </h1>
-          <p>
-            Tell us how you want to show up. We read the culture around it, then find the fragrance
-            that fits.
-          </p>
+          <p>Start with the outfit. Find the scent that finishes it.</p>
           <ol className="steps" aria-label="Progress">
             {['Your look', 'Touchstones', 'Shortlist'].map((l, i) => (
               <li key={l} className={step === i + 1 ? 'now' : step > i + 1 ? 'done' : ''}>
