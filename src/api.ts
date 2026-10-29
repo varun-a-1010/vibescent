@@ -72,6 +72,10 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
 export const api = {
   status: () => call<Status>('/api/status'),
   suggest: (text: string, image?: Photo) => call<Suggestion>('/api/suggest', { text, image }),
+  reply: (text: string) =>
+    call<{ entities: Entity[]; unmatched: string[]; detail: string | null }>('/api/reply', {
+      text,
+    }),
   search: (query: string, kind: Kind) =>
     call<{ results: Entity[] }>('/api/entities/search', { query, kind }),
   recommend: (body: unknown) => call<Result>('/api/recommend', body),

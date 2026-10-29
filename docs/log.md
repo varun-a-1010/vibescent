@@ -6,6 +6,7 @@
 - 2026-10-29: switched to Fragologist's live recommendation API; removed dev export; multi-namespace Qloo tags; presets and restyled GUI.
 
 ## 2026-10-29 — chat-thread UI
+
 The three-step form became one chat thread: user look bubble, Gemini read plus follow-up question,
 Qloo touchstone picker, user pick bubble, then Qloo / Gemini / shortlist messages. The composer stays
 docked; replies at the touchstone stage re-run suggestion with the added detail, and replies after

@@ -870,3 +870,21 @@ main.wrap {
 .restart {
   margin-left: auto;
 }
+
+/* touchstone categories as single scrolling rows */
+.rows {
+  display: block;
+}
+.cat {
+  display: block;
+}
+.chips.scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+.chips.scroll .tile {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}

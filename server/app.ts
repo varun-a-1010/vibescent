@@ -28,6 +28,7 @@ const suggestBody = z.object({
   text: z.string().max(1000).default(''),
   image: z.object({ mimeType: z.enum(IMAGE_TYPES), data: z.string().max(6_000_000) }).optional(),
 });
+const replyBody = z.object({ text: z.string().min(1).max(1000) });
 const searchBody = z.object({ query: z.string().min(1).max(100), kind });
 const recommendBody = constraintsSchema.extend({
   look: z.string().min(1).max(1000),
@@ -76,6 +77,10 @@ export function buildApp(deps: Deps): FastifyInstance {
     const body = suggestBody.parse(req.body);
     if (!body.text.trim() && !body.image) throw new z.ZodError([]);
     return need(deps.suggester, 'Gemini').suggest(body, need(deps.qloo, 'Qloo'));
+  });
+  app.post('/api/reply', async (req) => {
+    const body = replyBody.parse(req.body);
+    return need(deps.suggester, 'Gemini').parseReply(body.text, need(deps.qloo, 'Qloo'));
   });
   app.post('/api/entities/search', async (req) => {
     const body = searchBody.parse(req.body);

@@ -126,9 +126,45 @@ export function App() {
     push({ kind: 'user', text: t });
     setText('');
     if (stage === 'touch') {
-      const next = `${lookText}. ${t}`;
-      setLookText(next);
-      ask(next, null);
+      run('Looking those up…', async () => {
+        const r = await api.reply(t);
+        const known = new Set(picked.map((p) => p.entityId));
+        const fresh = r.entities.filter((e) => !known.has(e.entityId));
+        const room = Math.max(0, 5 - picked.length);
+        setPicked((p) => [...p, ...fresh.slice(0, room)]);
+        const said = [
+          fresh.length
+            ? `Added ${fresh
+                .slice(0, room)
+                .map((e) => e.name)
+                .join(', ')}.`
+            : '',
+          fresh.length > room ? 'You can pick up to 5, so I stopped there.' : '',
+          r.unmatched.length ? `I couldn’t find ${r.unmatched.join(', ')} in Qloo.` : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
+        if (r.detail) {
+          const next = `${lookText}. ${r.detail}`;
+          setLookText(next);
+          const s2 = await api.suggest(next);
+          setSuggestion(s2);
+          push(
+            {
+              kind: 'ai',
+              text: [said, s2.summary].filter(Boolean).join(' '),
+              question: s2.followUp,
+            },
+            { kind: 'touch', id: Date.now() },
+          );
+        } else {
+          push({
+            kind: 'ai',
+            text: said || 'I didn’t catch a name there. Try a person, brand, artist or film.',
+          });
+          push({ kind: 'touch', id: Date.now() });
+        }
+      });
     } else {
       const p = [prefs, t].filter(Boolean).join('; ');
       setPrefs(p);
@@ -230,7 +266,7 @@ export function App() {
           stage === 'start'
             ? 'What are you wearing and where are you headed? Add or drop a photo too.'
             : stage === 'touch'
-              ? 'Answer, or add a detail about the look…'
+              ? 'Answer, or add your own names: “also Tyler, the Creator and Succession”'
               : 'Tell me what to change: lighter, more woody, cheaper…'
         }
       />
@@ -504,11 +540,11 @@ function Touchstones({
           {picked.length}/5 · {picked.length ? 'tap again to remove' : 'pick at least 1'}
         </span>
       </div>
-      <div className="cats">
+      <div className="rows">
         {(Object.entries(suggestion.carousels) as [Kind, Entity[]][]).map(([kind, list]) => (
           <div key={kind} className="cat">
             <h3>{KIND_LABEL[kind] ?? kind}</h3>
-            <div className="chips">
+            <div className="chips scroll">
               {list.map((e) => {
                 const on = picked.some((x) => x.entityId === e.entityId);
                 return (
@@ -527,7 +563,6 @@ function Touchstones({
           </div>
         ))}
       </div>
-      <Custom onPick={toggle} />
       <div>
         {picked
           .filter((p) => !inCarousel.includes(p.entityId))
@@ -752,61 +787,5 @@ function Card({ it }: { it: Item }) {
         </a>
       )}
     </article>
-  );
-}
-
-function Custom({ onPick }: { onPick: (e: Entity) => void }) {
-  const [q, setQ] = useState('');
-  const [kind, setKind] = useState<Kind>('person');
-  const [found, setFound] = useState<Entity[]>([]);
-  const [msg, setMsg] = useState('');
-  return (
-    <div className="custom">
-      <h3>Add your own</h3>
-      <div className="row">
-        <select value={kind} onChange={(e) => setKind(e.target.value as Kind)}>
-          {Object.entries(KIND_LABEL).map(([k, l]) => (
-            <option key={k} value={k}>
-              {l}
-            </option>
-          ))}
-        </select>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Type a name"
-          maxLength={100}
-        />
-        <button
-          onClick={async () => {
-            try {
-              const r = await api.search(q, kind);
-              setFound(r.results);
-              setMsg(r.results.length ? '' : 'No match.');
-            } catch (e) {
-              setMsg(e instanceof Error ? e.message : 'Search failed.');
-            }
-          }}
-        >
-          Search
-        </button>
-      </div>
-      {msg && <small className="muted">{msg}</small>}
-      <div className="carousel">
-        {found.map((e) => (
-          <button
-            key={e.entityId}
-            className="tile"
-            onClick={() => {
-              onPick(e);
-              setFound([]);
-              setQ('');
-            }}
-          >
-            {e.name}
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }
