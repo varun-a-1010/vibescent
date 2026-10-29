@@ -15,6 +15,36 @@ export type Preset = {
 /** Deliberately varied: seasons, formality, gender, budget and mood, so the demo shows range. */
 export const PRESETS: Preset[] = [
   {
+    id: 'photo-stripe',
+    title: 'Sunday errands',
+    look: 'Oversized striped shirt, baggy jeans and clogs for a slow, sunny weekend wander.',
+    gender: 'any',
+    avoid: [],
+    prefs: '',
+    colors: ['#3a2530', '#c98aa5'],
+    photo: 'stripe.jpg',
+  },
+  {
+    id: 'photo-rome',
+    title: 'Night in Rome',
+    look: 'Black blazer over an open white shirt, a late evening stroll past the fountains.',
+    gender: 'masculine',
+    avoid: [],
+    prefs: '',
+    colors: ['#14120f', '#7a6a55'],
+    photo: 'rome.jpg',
+  },
+  {
+    id: 'photo-wine',
+    title: 'Wine bar',
+    look: 'Black turtleneck and washed straight-leg jeans, a glass of white wine at a corner bar.',
+    gender: 'feminine',
+    avoid: [],
+    prefs: '',
+    colors: ['#2a2218', '#9c7b4f'],
+    photo: 'wine.jpg',
+  },
+  {
     id: 'boardroom',
     title: 'Client meeting',
     look: 'Charcoal suit, crisp white shirt and polished oxfords for a nine o’clock meeting with a new client.',
