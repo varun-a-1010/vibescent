@@ -186,12 +186,11 @@ export function App() {
                     className="preset"
                     disabled={!!busy || !status?.gemini}
                     style={{
-                      background: p.photo
-                        ? `linear-gradient(180deg, #0000 25%, ${p.colors[0]}ee), url(/samples/${p.photo}) center 30% / cover`
-                        : `linear-gradient(135deg, ${p.colors[0]}, ${p.colors[1]})`,
+                      background: `linear-gradient(135deg, ${p.colors[0]}, ${p.colors[1]})`,
                     }}
                     onClick={() => usePreset(p)}
                   >
+                    {p.photo && <img className="pthumb" alt="" src={`/samples/${p.photo}`} />}
                     <b>{p.title}</b>
                     <span>{p.look}</span>
                   </button>
