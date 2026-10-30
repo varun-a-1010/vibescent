@@ -50,7 +50,7 @@ function limiter(max: number, windowMs: number) {
 }
 
 export function buildApp(deps: Deps): FastifyInstance {
-  const app = Fastify({ logger: false, bodyLimit: 9_000_000 });
+  const app = Fastify({ logger: false, bodyLimit: 9_000_000, trustProxy: '127.0.0.1' });
   const allow = limiter(30, 60_000);
   app.addHook('onRequest', async (req, reply) => {
     if (req.method === 'POST' && !allow(req.ip))

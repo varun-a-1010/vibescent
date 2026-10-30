@@ -1,7 +1,7 @@
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import type { GenerateContentParameters, GenerateContentResponse } from '@google/genai';
 import { z } from 'zod';
-import { retryOnce } from './retry';
+import { chainGenerate } from './models';
 import { createBriefSchema, type Constraints, type ScentBrief } from './brief';
 import type { Entity, StyleTag } from './qloo';
 import type { Vocab } from './vocab';
@@ -53,9 +53,7 @@ export function createGeminiTranslator(
   }
   const generate =
     options.generate ??
-    (client
-      ? (r: GenerateContentParameters) => retryOnce(() => client!.models.generateContent(r))
-      : undefined);
+    (client ? (r: GenerateContentParameters) => chainGenerate(client!)(r) : undefined);
   return {
     async translate(input, vocab) {
       if (!generate) throw new Error('Gemini is not connected. Configure the Vertex settings.');

@@ -3,9 +3,8 @@
 Independent Qloo hackathon project: turns an outfit, occasion and cultural touchstones
 into a shortlist of fragrance samples. Flow: Qloo (confirmed entities, then aesthetic
 tags) → Gemini (scent brief in Fragologist's controlled vocabulary) → Fragologist
-catalog service (filter and rank). Work on `main`; no remote is configured initially.
-Never modify Fragologist from this repo (use an inbox request), Doorway, Partner Mix,
-Common Ground or any submitted artifact.
+catalog service (filter and rank). Work on `main`. Never modify Fragologist from this repo (use an inbox request) or any
+other app. Ship with `~/code/dev-env/bin/qloo-ship vibescent`.
 
 - Follow `~/code/AGENTS.md`. No unsolicited browser or visual QA.
 - `npm run check` runs formatting, tests and type checking. `npm run probe` is the

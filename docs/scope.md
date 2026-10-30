@@ -23,4 +23,4 @@ last_verified: 2026-10-29
 
 ## Not built
 
-Deployment and public hosting, README/licence for submission, demo video, a persisted session.
+A persisted session.
