@@ -11,6 +11,10 @@ const vertex = {
   project: env.VERTEX_LLM_PROJECT_ID,
   serviceAccount: env.VERTEX_LLM_SERVICE_ACCOUNT,
   location: env.VERTEX_LLM_REGION,
+  backup: {
+    project: env.VERTEX_LLM_BACKUP_PROJECT_ID,
+    serviceAccount: env.VERTEX_LLM_BACKUP_SERVICE_ACCOUNT,
+  },
 };
 const hasVertex = Boolean(vertex.project && vertex.serviceAccount);
 const catalogKey = env.FRAGOLOGIST_API_KEY;

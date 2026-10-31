@@ -1,7 +1,7 @@
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { ThinkingLevel } from '@google/genai';
 import type { GenerateContentParameters, GenerateContentResponse } from '@google/genai';
 import { z } from 'zod';
-import { ROUTINE_CHAIN, chainGenerate } from './models';
+import { ROUTINE_CHAIN, chainGenerate, createVertexClient, type VertexOptions } from './models';
 import { PRIMARY_KINDS, type Entity, type Kind, type Qloo } from './qloo';
 
 export const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
@@ -53,28 +53,12 @@ export interface Suggester {
 }
 
 export function createGeminiSuggester(
-  options: {
-    project?: string;
-    serviceAccount?: string;
-    location?: string;
+  options: VertexOptions & {
     model?: string;
     generate?: (request: GenerateContentParameters) => Promise<GenerateContentResponse>;
   } = {},
 ): Suggester {
-  let client: GoogleGenAI | undefined;
-  if (options.project && options.serviceAccount) {
-    const raw = options.serviceAccount.trim();
-    const credentials = JSON.parse(
-      raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8'),
-    );
-    client = new GoogleGenAI({
-      vertexai: true,
-      project: options.project,
-      location: options.location || 'global',
-      googleAuthOptions: { credentials },
-      httpOptions: { apiVersion: 'v1', timeout: 60_000, retryOptions: { attempts: 1 } },
-    });
-  }
+  const client = createVertexClient(options);
   const generate =
     options.generate ??
     (client

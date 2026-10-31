@@ -1,8 +1,13 @@
 import {
+  GoogleGenAI,
   ThinkingLevel,
   type GenerateContentParameters,
   type GenerateContentResponse,
 } from '@google/genai';
+
+export type Generate = (request: GenerateContentParameters) => Promise<GenerateContentResponse>;
+export type VertexAccount = { project?: string; serviceAccount?: string };
+export type VertexOptions = VertexAccount & { location?: string; backup?: VertexAccount };
 
 /** The scent judgment leads with Argon. The Flash models catch its failures and rate limits. */
 export const MODEL_CHAIN = [
@@ -77,4 +82,52 @@ export function chainGenerate(
     );
     return value;
   };
+}
+
+const statusOf = (error: unknown) => (error as { status?: number }).status ?? 'unknown';
+
+/**
+ * Each project has its own quota, so a failed call tries the same model on the backup before the
+ * model chain moves on. A call that already timed out has no time left to try again.
+ */
+export const withBackup =
+  (primary: Generate, backup: Generate): Generate =>
+  async (request) => {
+    try {
+      return await primary(request);
+    } catch (error) {
+      if (request.config?.abortSignal?.aborted) throw error;
+      console.warn('Primary Vertex project failed, trying the backup.', statusOf(error));
+      return backup(request);
+    }
+  };
+
+function connect(project: string, serviceAccount: string, location?: string): Generate {
+  const raw = serviceAccount.trim();
+  const credentials = JSON.parse(
+    raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8'),
+  );
+  const client = new GoogleGenAI({
+    vertexai: true,
+    project,
+    location: location || 'global',
+    googleAuthOptions: { credentials },
+    httpOptions: { apiVersion: 'v1', timeout: 60_000, retryOptions: { attempts: 1 } },
+  });
+  return (request) => client.models.generateContent(request);
+}
+
+export function createVertexClient(options: VertexOptions) {
+  if (!options.project || !options.serviceAccount) return undefined;
+  let generateContent = connect(options.project, options.serviceAccount, options.location);
+  const { backup } = options;
+  if (backup?.project && backup.serviceAccount) {
+    try {
+      const second = connect(backup.project, backup.serviceAccount, options.location);
+      generateContent = withBackup(generateContent, second);
+    } catch {
+      console.warn('The backup Vertex credential could not be read, so it is not in use.');
+    }
+  }
+  return { models: { generateContent } };
 }
