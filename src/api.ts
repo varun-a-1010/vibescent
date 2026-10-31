@@ -1,14 +1,5 @@
 export type Kind =
-  | 'person'
-  | 'brand'
-  | 'artist'
-  | 'movie'
-  | 'tv_show'
-  | 'destination'
-  | 'place'
-  | 'book'
-  | 'podcast'
-  | 'video_game';
+  'person' | 'brand' | 'artist' | 'movie' | 'tv_show' | 'place' | 'book' | 'podcast' | 'video_game';
 export type Entity = { entityId: string; name: string; kind: Kind };
 export type Tag = { id: string; name: string; group: string };
 export type Suggestion = {

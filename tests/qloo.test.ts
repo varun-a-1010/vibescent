@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createQloo, parseTags } from '../server/qloo';
 
 const id = '11111111-1111-4111-8111-111111111111';
@@ -59,5 +59,29 @@ describe('qloo client', () => {
         { tag_id: 'a', name: 'X' },
       ]),
     ).toHaveLength(1);
+  });
+
+  it('retries a rate limit so a name is not silently lost', async () => {
+    const ok = new Response(
+      JSON.stringify({
+        results: [
+          {
+            entity_id: id,
+            name: 'Tom Ford',
+            types: ['urn:entity:brand'],
+          },
+        ],
+      }),
+    );
+    const replies = [new Response('', { status: 429 }), new Response('', { status: 503 }), ok];
+    const fetcher = vi.fn(async () => replies.shift()!);
+    const qloo = createQloo({
+      apiKey: 'k',
+      fetch: fetcher as unknown as typeof fetch,
+      paceMs: 0,
+      retryMs: 0,
+    });
+    expect((await qloo.search('Tom Ford', 'brand'))[0]?.name).toBe('Tom Ford');
+    expect(fetcher).toHaveBeenCalledTimes(3);
   });
 });

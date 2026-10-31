@@ -2,14 +2,7 @@ import { z } from 'zod';
 
 export const QLOO_ORIGIN = 'https://hackathon.api.qloo.com';
 /** Primary anchor categories shown as carousels; the rest only when the user names them. */
-export const PRIMARY_KINDS = [
-  'person',
-  'brand',
-  'artist',
-  'movie',
-  'tv_show',
-  'destination',
-] as const;
+export const PRIMARY_KINDS = ['person', 'brand', 'artist', 'movie', 'tv_show'] as const;
 export const SECONDARY_KINDS = ['place', 'book', 'podcast', 'video_game'] as const;
 export type Kind = (typeof PRIMARY_KINDS)[number] | (typeof SECONDARY_KINDS)[number];
 export type Entity = { entityId: string; name: string; kind: Kind };
@@ -61,20 +54,50 @@ export function parseTags(raw: unknown, group = ''): StyleTag[] {
   });
 }
 
-/** Read-only client: one origin, no redirects, bounded time and bytes, no retries. */
+const wait = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
+const MAX_ATTEMPTS = 4;
+
+/**
+ * Read-only client: one origin, no redirects, bounded time and bytes. A look asks for dozens of
+ * names at once and Qloo rate-limits bursts, so calls share a pace and retry instead of vanishing.
+ */
 export function createQloo(
-  options: { apiKey: string; fetch?: typeof fetch; timeoutMs?: number } = { apiKey: '' },
+  options: {
+    apiKey: string;
+    fetch?: typeof fetch;
+    timeoutMs?: number;
+    paceMs?: number;
+    retryMs?: number;
+  } = { apiKey: '' },
 ): Qloo {
   const key = options.apiKey.trim();
   if (!key) throw new Error('QLOO_API_KEY is required.');
+  const paceMs = options.paceMs ?? 110;
+  const retryMs = options.retryMs ?? 400;
+  let nextSlot = 0;
+  async function turn() {
+    const now = Date.now();
+    const start = Math.max(now, nextSlot);
+    nextSlot = start + paceMs;
+    if (start > now) await wait(start - now);
+  }
+  async function send(url: URL) {
+    for (let attempt = 1; ; attempt++) {
+      await turn();
+      const response = await (options.fetch ?? fetch)(url, {
+        headers: { 'X-Api-Key': key, Accept: 'application/json' },
+        redirect: 'error',
+        signal: AbortSignal.timeout(options.timeoutMs ?? 15_000),
+      });
+      const busy = response.status === 429 || response.status >= 500;
+      if (!busy || attempt === MAX_ATTEMPTS) return response;
+      await wait(retryMs * 2 ** (attempt - 1));
+    }
+  }
   async function get(path: string, params: Record<string, string>) {
     const url = new URL(path, QLOO_ORIGIN);
     url.search = new URLSearchParams(params).toString();
-    const response = await (options.fetch ?? fetch)(url, {
-      headers: { 'X-Api-Key': key, Accept: 'application/json' },
-      redirect: 'error',
-      signal: AbortSignal.timeout(options.timeoutMs ?? 15_000),
-    });
+    const response = await send(url);
     if (response.status === 404 && path === '/search') return { results: [] };
     if (!response.ok) throw new Error(`Qloo ${path} returned HTTP ${response.status}`);
     const body = await response.text();

@@ -19,7 +19,6 @@ const KIND_LABEL: Record<string, string> = {
   artist: 'Music',
   movie: 'Movies',
   tv_show: 'TV',
-  destination: 'Destinations',
 };
 const AVOID = ['sweet', 'smoky', 'floral', 'powdery', 'woody', 'citrus', 'musk'];
 const REACTIONS: [string, string][] = [
@@ -269,7 +268,7 @@ export function App() {
           stage === 'start'
             ? 'What are you wearing and where are you headed? Add or drop a photo too.'
             : stage === 'touch'
-              ? 'Answer, or add your own names: “also Tyler, the Creator and Succession”'
+              ? 'Add your own people, movies, shows, music or clothing brands: “Tyler, the Creator and Succession”'
               : 'Tell me what to change: lighter, more woody, cheaper…'
         }
       />

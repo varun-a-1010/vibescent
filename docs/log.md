@@ -2,6 +2,10 @@
 
 ## 2026-10-31
 
+- Fixed thin rows on the taste step. A look asks Qloo for dozens of names at once and bursts were
+  rate-limited, so names vanished silently. Calls now share a pace and retry.
+- Removed destinations from the taste step, because "Which of these feel like you?" does not fit a
+  place, and made the input say what can be added.
 - Added a second Vertex project. A failed call now tries the same model there before the chain
   moves to the next model, so a quota limit on one project keeps Argon in use.
 - Added all six requested sample look photos as 800×800 JPEGs under 150 KB each;
