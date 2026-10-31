@@ -8,6 +8,9 @@
   timed out intermittently and rate limits must never end a request.
 - Trusted the local nginx proxy so the per-client limiter works when hosted.
 - Deployed to Motif at vibescent.slate-app.online and published the repository under MIT.
+- Cached the vocabulary and repeat recommendations, honored `Retry-After`, and dropped score-zero
+  items, after Fragologist's audit showed one shared bucket of 30 requests and fallback results with
+  no evidence.
 - Refreshed the sample looks toward sports, film, live music and hosting, and made sample photos
   optional so a look works before its photo exists. Moved first-step suggestions to the fast chain.
 

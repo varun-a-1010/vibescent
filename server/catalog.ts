@@ -40,38 +40,60 @@ export interface Catalog {
   recommend(request: CatalogRequest): Promise<Recommendation[]>;
 }
 
+const VOCAB_TTL_MS = 3_600_000;
+const RESULT_TTL_MS = 1_800_000;
+const MAX_RETRY_WAIT_S = 13;
+
 export function createHttpCatalog(options: {
   baseUrl: string;
   apiKey: string;
   fetch?: typeof fetch;
   timeoutMs?: number;
+  sleep?: (ms: number) => Promise<void>;
 }): Catalog {
   const base = options.baseUrl.replace(/\/$/, '');
-  async function call(path: string, init: RequestInit = {}) {
+  const sleep =
+    options.sleep ?? ((ms: number) => new Promise<void>((done) => setTimeout(done, ms)));
+  async function call(path: string, init: RequestInit = {}, retry = true): Promise<unknown> {
     const response = await (options.fetch ?? fetch)(`${base}${path}`, {
       ...init,
       headers: { 'X-Api-Key': options.apiKey, 'Content-Type': 'application/json' },
       redirect: 'error',
       signal: AbortSignal.timeout(options.timeoutMs ?? 15_000),
     });
-    if (response.status === 429)
+    if (response.status === 429) {
+      const wait = Number(response.headers.get('retry-after'));
+      if (retry && wait > 0 && wait <= MAX_RETRY_WAIT_S) {
+        await sleep(wait * 1000);
+        return call(path, init, false);
+      }
       throw Object.assign(new Error('The fragrance catalog is busy. Try again in a few seconds.'), {
         statusCode: 429,
       });
+    }
     if (!response.ok) throw new Error(`Catalog ${path} returned HTTP ${response.status}`);
     return response.json();
   }
+  // Every partner request draws on one small shared bucket, so nothing is fetched twice.
+  let vocab: { value: Vocab; expires: number } | undefined;
+  const results = new Map<string, { items: Recommendation[]; expires: number }>();
   return {
     async vocab() {
-      return vocabSchema.parse(await call('/api/public/v1/vocab'));
+      if (vocab && vocab.expires > Date.now()) return vocab.value;
+      const value = vocabSchema.parse(await call('/api/public/v1/vocab'));
+      vocab = { value, expires: Date.now() + VOCAB_TTL_MS };
+      return value;
     },
     async recommend(request) {
-      const data = z
+      const body = JSON.stringify(request);
+      const cached = results.get(body);
+      if (cached && cached.expires > Date.now()) return cached.items;
+      const { items } = z
         .object({ items: z.array(recommendationSchema) })
-        .parse(
-          await call('/api/public/v1/recommend', { method: 'POST', body: JSON.stringify(request) }),
-        );
-      return data.items;
+        .parse(await call('/api/public/v1/recommend', { method: 'POST', body }));
+      if (results.size >= 200) results.delete(results.keys().next().value!);
+      results.set(body, { items, expires: Date.now() + RESULT_TTL_MS });
+      return items;
     },
   };
 }

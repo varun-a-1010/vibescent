@@ -53,7 +53,10 @@ export async function recommend(
     excludeAccords: known(input.constraints.excludeAccords, vocab.accords),
     excludeNotes: known(input.constraints.excludeNotes, vocab.notes),
   };
-  const items = await deps.catalog.recommend(toCatalogRequest(brief, constraints));
+  // A score of zero means the catalog had no evidence for this look, so it is not a recommendation.
+  const items = (await deps.catalog.recommend(toCatalogRequest(brief, constraints))).filter(
+    (item) => item.score > 0,
+  );
   return {
     qloo: { entities: input.entities, tags, dropped: allTags.filter((t) => off.has(t.id)) },
     brief,
