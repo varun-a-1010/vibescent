@@ -6,6 +6,8 @@
   timed out intermittently and rate limits must never end a request.
 - Trusted the local nginx proxy so the per-client limiter works when hosted.
 - Deployed to Motif at vibescent.slate-app.online and published the repository under MIT.
+- Refreshed the sample looks toward sports, film, live music and hosting, and made sample photos
+  optional so a look works before its photo exists. Moved first-step suggestions to the fast chain.
 
 - 2026-10-29: repo created; server core with tests. Catalog contract awaits Fragologist.
 - 2026-10-29: live probes pass (Qloo style tags, Gemini brief via Slate Vertex launcher): `npm run probe`, `npm run probe:brief`.

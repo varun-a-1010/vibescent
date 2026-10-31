@@ -174,7 +174,10 @@ export function App() {
   const usePreset = async (p: Preset) => {
     const sample = p.photo
       ? await fetch(`/samples/${p.photo}`)
-          .then((r) => r.blob())
+          .then((r) => {
+            if (!r.ok) throw new Error('No photo for this look yet');
+            return r.blob();
+          })
           .then((b) => toPhoto(new File([b], p.photo!, { type: b.type })))
           .catch(() => null)
       : null;
@@ -323,7 +326,14 @@ export function App() {
                     }}
                     onClick={() => usePreset(p)}
                   >
-                    {p.photo && <img className="pthumb" alt="" src={`/samples/${p.photo}`} />}
+                    {p.photo && (
+                      <img
+                        className="pthumb"
+                        alt=""
+                        src={`/samples/${p.photo}`}
+                        onError={(e) => e.currentTarget.remove()}
+                      />
+                    )}
                     <b>{p.title}</b>
                     <span>{p.look}</span>
                   </button>

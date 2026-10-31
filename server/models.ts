@@ -13,6 +13,9 @@ export const MODEL_CHAIN = [
   'gemini-2.5-flash',
 ] as const;
 
+/** For quick first steps. Argon stays on the scent brief, where its judgment matters most. */
+export const ROUTINE_CHAIN = MODEL_CHAIN.slice(1);
+
 const TIMEOUT_MS: Record<string, number> = { 'gemini-4-argon': 50_000 };
 const DEFAULT_TIMEOUT_MS = 40_000;
 
