@@ -2,6 +2,8 @@
 
 ## 2026-10-31
 
+- Added all six requested sample look photos as 800×800 JPEGs under 150 KB each;
+  their prompts and exact filenames are in `docs/image-requests.md`.
 - Added a model chain led by Gemini 4 Argon, replacing the single retry, because Gemini 3.8 Flash
   timed out intermittently and rate limits must never end a request.
 - Trusted the local nginx proxy so the per-client limiter works when hosted.
