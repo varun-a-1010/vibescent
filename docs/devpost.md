@@ -27,8 +27,8 @@ cultural entities and aesthetic tags. Without it, the brief would be a language 
 ## How we built it
 
 Gemini handles vision and writes a scent brief in a controlled vocabulary. Qloo supplies confirmed
-entities and tags. A live fragrance catalog filters and ranks. Gemini 4 Argon leads, with a chain of
-Flash models behind it. TypeScript, Fastify and React.
+entities and tags. A live fragrance catalog filters and ranks. Gemini 4 Argon leads, with a second
+Vertex project and a chain of Flash models behind it. TypeScript, Fastify and React.
 
 ## Limits
 
